@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Anna — Lélek & Nyelv',
+  title: 'Lélek & Nyelv',
   description: 'Mentálhigiénés támogatás és személyre szabott angolórák egy figyelmes, biztonságos térben.',
+  icons: { icon: '/favicon.svg' },
 };
 
 export default function RootLayout({

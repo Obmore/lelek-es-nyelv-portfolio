@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 const faqs = [
   {
@@ -24,6 +24,7 @@ const faqs = [
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   useEffect(() => {
     const reveals = document.querySelectorAll<HTMLElement>('[data-reveal]');
@@ -47,6 +48,31 @@ export default function Home() {
   }, []);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setFormStatus('sending');
+
+    try {
+      const payload = Object.fromEntries(new FormData(form).entries());
+      const response = await fetch('https://formsubmit.co/ajax/benzdsiott1998@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json() as { success?: boolean | string };
+
+      if (!response.ok || result.success === false || result.success === 'false') {
+        throw new Error('A küldés sikertelen.');
+      }
+
+      form.reset();
+      setFormStatus('sent');
+    } catch {
+      setFormStatus('error');
+    }
+  };
 
   return (
     <main>
@@ -290,13 +316,90 @@ export default function Home() {
       </section>
 
       <section className="contact" id="kapcsolat">
-        <div className="contact-orbit" aria-hidden="true"><span>LET&apos;S TALK • BESZÉLGESSÜNK • </span></div>
-        <div className="contact-content" data-reveal>
+        <div className="contact-intro" data-reveal>
           <p className="section-kicker">Első lépés</p>
           <h2>Van kedved<br /><em>beszélgetni?</em></h2>
-          <p>Írj néhány mondatot arról, miben vagy most. Egy munkanapon belül válaszolok, és egyeztetünk egy díjmentes, 20 perces ismerkedést.</p>
-          <a className="button button-light" href="mailto:hello@lelekesnyelv.hu?subject=Ismerkedő beszélgetés">Írok Annának <span>↗</span></a>
+          <p>Mesélj röviden arról, mivel keresel, és add meg, hogyan érhetlek el. Az üzeneted rendezett formában, közvetlenül Anna postafiókjába érkezik.</p>
+          <div className="contact-promise">
+            <span>01</span><p><b>Díjmentes első beszélgetés</b><br />20 perc, online</p>
+          </div>
+          <div className="contact-promise">
+            <span>02</span><p><b>Válasz egy munkanapon belül</b><br />e-mailben vagy telefonon</p>
+          </div>
         </div>
+
+        <form
+          className="contact-form"
+          action="https://formsubmit.co/benzdsiott1998@gmail.com"
+          method="POST"
+          onSubmit={handleSubmit}
+          onChange={() => formStatus !== 'idle' && setFormStatus('idle')}
+          data-reveal
+        >
+          <input type="hidden" name="_subject" value="Új megkeresés — Lélek & Nyelv" />
+          <input type="hidden" name="_template" value="table" />
+          <input type="hidden" name="_captcha" value="false" />
+          <input type="text" name="_honey" className="honey-field" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+
+          <div className="form-heading">
+            <span>ÚJ ÜZENET</span>
+            <span>ANNA RÉSZÉRE</span>
+          </div>
+
+          <fieldset className="topic-fieldset">
+            <legend>Mivel kapcsolatban keresel?</legend>
+            <div className="topic-options">
+              {['Mentálhigiénés beszélgetés', 'Angolóra', 'Mindkettő', 'Egyéb'].map((topic) => (
+                <label key={topic}>
+                  <input type="radio" name="Megkeresés témája" value={topic} required />
+                  <span>{topic}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="form-grid">
+            <label className="field">
+              <span>Neved</span>
+              <input type="text" name="Név" placeholder="Hogy szólíthatlak?" autoComplete="name" required />
+            </label>
+            <label className="field">
+              <span>E-mail címed</span>
+              <input type="email" name="E-mail" placeholder="nev@email.hu" autoComplete="email" required />
+            </label>
+            <label className="field">
+              <span>Telefonszámod <i>opcionális</i></span>
+              <input type="tel" name="Telefonszám" placeholder="+36 30 123 4567" autoComplete="tel" />
+            </label>
+            <label className="field">
+              <span>Hogyan válaszoljak?</span>
+              <select name="Preferált elérhetőség" defaultValue="E-mailben" required>
+                <option>E-mailben</option>
+                <option>Telefonon</option>
+                <option>Mindegy</option>
+              </select>
+            </label>
+            <label className="field message-field">
+              <span>Üzeneted</span>
+              <textarea name="Üzenet" placeholder="Néhány mondat arról, miben vagy most, és miben lenne jó támogatást kapnod…" rows={6} required />
+            </label>
+          </div>
+
+          <label className="consent-field">
+            <input type="checkbox" name="Adatkezelési hozzájárulás" value="Elfogadva" required />
+            <span>Hozzájárulok, hogy a megadott adataimat Anna a kapcsolatfelvétel és válaszadás céljából kezelje.</span>
+          </label>
+
+          <div className="form-submit-row">
+            <button className="button button-light" type="submit" disabled={formStatus === 'sending'}>
+              {formStatus === 'sending' ? 'Küldés folyamatban…' : 'Üzenet elküldése'} <span aria-hidden="true">↗</span>
+            </button>
+            <p className={`form-status ${formStatus}`} role="status" aria-live="polite">
+              {formStatus === 'sent' && 'Köszönöm! Az üzeneted úton van Annához.'}
+              {formStatus === 'error' && 'Most nem sikerült elküldeni. Kérlek, próbáld újra.'}
+            </p>
+          </div>
+        </form>
       </section>
 
       <footer>
@@ -305,7 +408,7 @@ export default function Home() {
           <span><strong>ANNA</strong><small>lélek &amp; nyelv</small></span>
         </a>
         <div className="footer-contact">
-          <a href="mailto:hello@lelekesnyelv.hu">hello@lelekesnyelv.hu</a>
+          <a href="mailto:benzdsiott1998@gmail.com">benzdsiott1998@gmail.com</a>
           <a href="#top">Instagram ↗</a>
         </div>
         <div className="footer-small">
