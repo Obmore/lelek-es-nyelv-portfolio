@@ -192,6 +192,16 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
   report(title === "Juhász Nagy Anna – Lélek & Nyelv", "index.html <title> equals the v2 title", `got ${JSON.stringify(title)}`);
 }
 
+// Privacy subpage in the built site
+{
+  const privPath = join(distDir, "adatkezeles", "index.html");
+  const exists = existsSync(privPath);
+  report(exists, "dist-github-pages/adatkezeles/index.html exists", `missing ${privPath}`);
+  const html = exists ? decode(readFileSync(privPath, "utf8")) : "";
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim();
+  report(title === "Adatkezelési tájékoztató – Juhász Nagy Anna", "adatkezeles/index.html <title> equals the privacy page title", `got ${JSON.stringify(title)}`);
+}
+
 // E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
 report(built.includes(EMAIL), "built contains the expected contact e-mail");
 report(built.includes("https://formsubmit.co/"), "built contains the form endpoint prefix https://formsubmit.co/");
