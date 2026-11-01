@@ -2,6 +2,7 @@ import { Component, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Color, Group, ShaderMaterial } from 'three';
+import type { WebGLRenderer } from 'three';
 import { sphereFragment, sphereVertex } from './shaders';
 
 /* ---- Tuning knobs (palette tokens match app/globals.css) ---- */
@@ -234,6 +235,7 @@ export default function HeroScene({
   const container = useRef<HTMLDivElement>(null);
   const pointer = useRef<Pointer>({ x: 0, y: 0 });
   const cleanupGl = useRef<(() => void) | null>(null);
+  const glRef = useRef<WebGLRenderer | null>(null);
   const readyFrame = useRef(0);
   const dead = useRef(false);
   const onReadyRef = useRef(onReady);
@@ -288,14 +290,48 @@ export default function HeroScene({
     };
   }, [reduced]);
 
+  const fail = () => {
+    dead.current = true;
+    if (readyFrame.current) cancelAnimationFrame(readyFrame.current);
+    readyFrame.current = 0;
+    onErrorRef.current?.();
+  };
+
+  // Idempotent: replaces any previous hooks, so it is safe to call from onCreated and again after a StrictMode remount.
+  const installGlHooks = () => {
+    const gl = glRef.current;
+    if (!gl || dead.current) return;
+    cleanupGl.current?.();
+    // three.js only logs shader compile/link errors; treat them as a scene failure so the CSS hero stays.
+    gl.debug.onShaderError = () => {
+      // three r186 no longer logs shader errors itself, so report once before failing.
+      if (!dead.current) console.error('HeroScene: shader compile/link failed; falling back to the CSS hero.');
+      fail();
+    };
+    const canvas = gl.domElement;
+    const lost = (event: Event) => {
+      event.preventDefault();
+      fail();
+    };
+    canvas.addEventListener('webglcontextlost', lost);
+    cleanupGl.current = () => {
+      canvas.removeEventListener('webglcontextlost', lost);
+      gl.debug.onShaderError = null;
+      cleanupGl.current = null;
+    };
+  };
+
+  // The cleanup removes the hooks; a StrictMode remount re-runs this and re-installs them on the live renderer.
   useEffect(() => {
     dead.current = false;
+    installGlHooks();
     return () => {
       dead.current = true;
       if (readyFrame.current) cancelAnimationFrame(readyFrame.current);
       readyFrame.current = 0;
       cleanupGl.current?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const frameloop = reduced ? 'demand' : inView && tabVisible ? 'always' : 'never';
@@ -313,32 +349,12 @@ export default function HeroScene({
           frameloop={frameloop}
           dpr={[1, 1.5]}
           camera={{ position: [0, 0, 10], fov: 30, near: 0.1, far: 50 }}
-          gl={{ alpha: true, antialias: true, powerPreference: 'default' }}
+          gl={{ alpha: true, antialias: true, powerPreference: 'default', failIfMajorPerformanceCaveat: true }}
           style={{ position: 'absolute', inset: 0 }}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0);
-            const fail = () => {
-              dead.current = true;
-              if (readyFrame.current) cancelAnimationFrame(readyFrame.current);
-              readyFrame.current = 0;
-              onErrorRef.current?.();
-            };
-            // three.js only logs shader compile/link errors; treat them as a scene failure so the CSS hero stays.
-            gl.debug.onShaderError = () => {
-              // three r186 no longer logs shader errors itself, so report once before failing.
-              if (!dead.current) console.error('HeroScene: shader compile/link failed; falling back to the CSS hero.');
-              fail();
-            };
-            const canvas = gl.domElement;
-            const lost = (event: Event) => {
-              event.preventDefault();
-              fail();
-            };
-            canvas.addEventListener('webglcontextlost', lost);
-            cleanupGl.current = () => {
-              canvas.removeEventListener('webglcontextlost', lost);
-              gl.debug.onShaderError = null;
-            };
+            glRef.current = gl;
+            installGlHooks();
           }}
         >
           <Scene

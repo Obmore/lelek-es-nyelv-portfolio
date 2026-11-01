@@ -12,6 +12,10 @@ const distDir = join(root, "dist-github-pages");
 const appDir = join(root, "app");
 const NB = " ";
 
+// Expected contact e-mail: the site's public contact address (fail closed, no SKIP path).
+// Hard-coded on purpose, never read from app/ (circular); EXPECTED_CONTACT_EMAIL may override it.
+const EMAIL = (process.env.EXPECTED_CONTACT_EMAIL ?? "").trim() || "juhasznagyanna@gmail.com";
+
 if (process.argv.includes("--build")) {
   const r = spawnSync("npm run build:github", { cwd: root, shell: true, stdio: "inherit" });
   if (r.status !== 0) {
@@ -82,6 +86,17 @@ const T1 = "Szeretném, szeretnénk megköszönni, amit értem tettél az elmúl
 const T2 = "Szeretném megköszönni azt a fejlődési lehetőséget, amit a te segítségeddel tapasztaltam meg. C1-es nyelvvizsgára készültem, és anyukámon keresztül ismertelek meg. Nagyon sokat fejlődtem az óráidon, annak ellenére, hogy ezeken online tudtam csak részt venni, mivel messze lakom. Mindig jó hangulatban teltek az órák, vidám hangulatban haladtunk át a témakörökön, nyelvtani anyagokon, rengeteg tesztet kitöltve. Nekem elsőre sikerült a vizsgám, amiért nagyon hálás vagyok. A többletpontokkal, amiket ez a nyelvvizsga hozott számomra, bekerültem az egyetemre, ahova jelentkeztem. Egy csodás kaland volt!";
 const T3 = "Pannihoz segítő alkalmakra kezdtem járni, az elmúlt két évben rendszeresen találkoztunk. Nagyon szeretek vele beszélgetni, hiszen mindig kifejezetten pontos meglátást kapok tőle, miközben figyelmesen végighallgat. A beszélgetés segít nekem abban, hogy megértsem a saját helyzetemet, és a környezetemben lévő emberek, családtagok viselkedésének mozgatórugóit, de elsősorban abban segít, hogy megértsem magam, s ezáltal sokkal közelebb kerültem önmagamhoz. Az alkalmakról mindig könnyebb szívvel távozom, s valami olyan konklúzióval, ami segít az aktuális nehézségemmel való megküzdésben. Nagyon tudom ajánlani őt, mert egy nagyon kedves, együttérző, közvetlen és nyitott embert ismertem meg a személyében. Mindenkivel gyorsan megtalálja a közös hangot, vele könnyen biztonságban érezhetjük magunkat. Legyen szó bármilyen helyzetről, ő tud valami olyat mondani, ami közelebb visz minket a megoldáshoz!";
 
+const A1 = "1969-ben születtem, s mivel szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.";
+const A2 = "Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.";
+const A3 = "Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a SOTE mentálhigiénés képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.";
+
+// The only places the word "díjmentes" may appear (v2).
+const FREE_STRINGS = [
+  "A 20 perces, díjmentes ismerkedő beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk.",
+  "Egy rövid, díjmentes online ismerkedő beszélgetésen megismerjük egymást és a kérdésedet.",
+  "Díjmentes ismerkedő beszélgetés",
+];
+
 const required = [
   ["testimonial T1 text", T1],
   ["testimonial T2 text", T2],
@@ -95,21 +110,44 @@ const required = [
   ["price mental hygiene", `18${NB}000${NB}Ft / 60 perc`],
   ["price English", `7000${NB}Ft / 60 perc`],
   ["mental hygiene name", "Mentálhigiénés segítő beszélgetés"],
-  ["mental hygiene scope line", "Felnőtt-, gyermek- és ifjúságpszichológiai konzultáció"],
+  ["mental hygiene scope line (v2)", "Segítő beszélgetés felnőtteknek, fiataloknak és gyermekeknek"],
   ["English name", "Angol oktatás"],
-  ["FAQ answer 1", "Az első 20 perces beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk."],
-  ["method step 01 text", "Egy rövid online beszélgetésen megismerjük egymást és a kérdésedet."],
-  ["contact promise title", "Első beszélgetés"],
+  ["English scope line (v2)", "Felkészítés nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgákra (például Origó, Euroexam, BME, telc)"],
+  ["English level line (v2)", "Alap-, közép- és felsőfokon"],
+  ["FAQ answer 1 (v2)", FREE_STRINGS[0]],
+  ["method step 01 text (v2)", FREE_STRINGS[1]],
+  ["contact promise title (v2)", FREE_STRINGS[2]],
   ["contact promise subline", "20 perc, online"],
-  ["audience line", "Felnőtteknek, gyermekeknek és fiataloknak"],
+  ["FAQ in-person question", "Online vagy személyesen találkozunk?"],
+  ["FAQ in-person answer (v2)", "A segítő beszélgetéseket személyesen, Budapesten a XI. kerületben, és online is tartom. Az angolórák online is elérhetők, így bárhonnan csatlakozhatsz; a részleteket az ismerkedő beszélgetésen egyeztetjük."],
+  ["hero fact (v2)", "perces alkalmak, személyesen és online"],
+  ["FAQ exam question (v2)", "Milyen nyelvvizsgára készítesz fel?"],
+  ["FAQ exam answer (v2)", "Minden nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgára (például Origó, Euroexam, BME, telc) vállalok felkészítést, alap-, közép- és felsőfokon."],
   ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is — a görcsös teljesítés helyett valódi kapcsolódással."],
   ["chip nyelvvizsga-felkészítés", "nyelvvizsga-felkészítés"],
+  ["full name", "Juhász Nagy Anna"],
+  ["about stamp", "ELTE · SOTE"],
+  ["about paragraph 1", A1],
+  ["about paragraph 2", A2],
+  ["about paragraph 3", A3],
+  ["consent text, part before link", "Elolvastam az"],
+  ["consent link text", "adatkezelési tájékoztatót"],
+  ["consent text, part after link", ", és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat – az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is – a kapcsolatfelvétel és a válaszadás céljából kezelje."],
+  ["privacy section id", "adatkezeles"],
+  ["privacy heading", "Adatkezelési tájékoztató"],
 ];
 
+const OLD_EMAIL = "benzdsiott1998@gmail.com";
 const ws = "[\\s\\u00a0]";
 const forbidden = [
-  ["díjmentes", /díjmentes/i],
   ["ingyenes/ingyen", /ingyen/i],
+  ["pszichológiai konzultáció", /pszichológiai konzultáció/i],
+  ["ifjúságpszichológiai", /ifjúságpszichológiai/i],
+  ["próbaóra", /próbaóra/i],
+  ["old contact e-mail", /benzdsiott1998@gmail\.com/i],
+  ["removed about sentence: Anna vagyok", /Anna vagyok, mentálhigiénés segítő szakember és angoltanár/],
+  ["removed about sentence: Abban hiszek", /Abban hiszek, hogy a valódi tanulás és változás ugyanonnan indul/],
+  ["removed about sentence: Nem kész receptekkel", /Nem kész receptekkel érkezem/],
   ["word Réka", /(?<![\p{L}])Réka(?![\p{L}])/iu],
   ["12+ év", new RegExp(`12\\+${ws}*év`, "i")],
   ["50 perc", new RegExp(`50${ws}*perc`, "i")],
@@ -135,6 +173,31 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
     report(!m, `${corpusName} lacks: ${name}`, m ? `found ${show(corpus.slice(Math.max(0, m.index - 10), m.index + 40))}` : "");
   }
 }
+// "díjmentes" only inside the three v2 strings (case-insensitive; longest first so nesting cannot leak).
+{
+  const masks = FREE_STRINGS.map((x) => norm(x).toLowerCase()).sort((p, q) => q.length - p.length);
+  for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
+    let rest = corpus.toLowerCase();
+    for (const mk of masks) rest = rest.split(mk).join("\u0000");
+    const idx = rest.indexOf("díjmentes");
+    report(idx < 0, `${corpusName}: díjmentes only inside the v2 strings`, idx >= 0 ? `stray ${show(rest.slice(Math.max(0, idx - 15), idx + 40))}` : "");
+  }
+}
+
+// Page title in the built index.html
+{
+  const indexPath = join(distDir, "index.html");
+  const html = existsSync(indexPath) ? decode(readFileSync(indexPath, "utf8")) : "";
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim();
+  report(title === "Juhász Nagy Anna – Lélek & Nyelv", "index.html <title> equals the v2 title", `got ${JSON.stringify(title)}`);
+}
+
+// E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
+report(built.includes(EMAIL), "built contains the expected contact e-mail");
+report(built.includes("https://formsubmit.co/"), "built contains the form endpoint prefix https://formsubmit.co/");
+report(built.includes("https://formsubmit.co/ajax/"), "built contains the AJAX endpoint prefix https://formsubmit.co/ajax/");
+report(!built.includes(OLD_EMAIL), "built lacks the old contact e-mail");
+
 if (srcFiles.length === 0) report(false, "app source readable", `no .ts/.tsx under ${appDir}`);
 
 console.log(`verify-content: ${pass} passed, ${fail} failed`);

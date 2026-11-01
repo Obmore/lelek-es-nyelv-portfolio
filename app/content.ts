@@ -1,14 +1,16 @@
 // All content that Anna may want to edit lives here. page.tsx only renders it.
 // U+00A0 (non-breaking space) keeps prices from wrapping in the middle of a number.
 
-/** Contact e-mail and form endpoint (owner decision pending - value unchanged). */
-export const CONTACT_EMAIL = 'benzdsiott1998@gmail.com';
+/** The site owner and the contact e-mail; the form endpoints are built from the e-mail. */
+export const OWNER_NAME = 'Juhász Nagy Anna';
+export const CONTACT_EMAIL = 'juhasznagyanna@gmail.com';
 export const FORM_ENDPOINT = `https://formsubmit.co/${CONTACT_EMAIL}`;
 export const FORM_AJAX_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
 
 /** Optional links: the link renders only when the URL is set. */
 export const INSTAGRAM_URL: string | null = null;
-export const PRIVACY_URL: string | null = null;
+export const FACEBOOK_URL: string | null = null;
+export const PRIVACY_URL: string | null = '#adatkezeles';
 
 /** Single source of truth for prices (used by the cards and by the FAQ). */
 export const PRICE_MENTAL = '18 000 Ft / 60 perc';
@@ -60,7 +62,7 @@ export type Service = {
   symbol: string;
   name: string;
   scope?: string;
-  audience?: string;
+  level?: string;
   description: string;
   chips: string[];
   price: string;
@@ -76,8 +78,7 @@ export const services: Service[] = [
     duration: '60 PERC',
     symbol: '↺',
     name: 'Mentálhigiénés segítő beszélgetés',
-    scope: 'Felnőtt-, gyermek- és ifjúságpszichológiai konzultáció',
-    audience: 'Felnőtteknek, gyermekeknek és fiataloknak',
+    scope: 'Segítő beszélgetés felnőtteknek, fiataloknak és gyermekeknek',
     description: 'Ha túl sok lett. Ha változnál. Ha szeretnéd végre meghallani a saját válaszaidat.',
     chips: ['élethelyzeti elakadások', 'önismeret és határok', 'stressz és egyensúly'],
     price: PRICE_MENTAL,
@@ -91,6 +92,8 @@ export const services: Service[] = [
     duration: '60 PERC',
     symbol: 'Aa',
     name: 'Angol oktatás',
+    scope: 'Felkészítés nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgákra (például Origó, Euroexam, BME, telc)',
+    level: 'Alap-, közép- és felsőfokon',
     description: 'Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is — a görcsös teljesítés helyett valódi kapcsolódással.',
     chips: ['beszédbátorság', 'munkahelyi angol', 'önazonos kommunikáció', 'nyelvvizsga-felkészítés'],
     price: PRICE_ENGLISH,
@@ -101,7 +104,7 @@ export const services: Service[] = [
 export const faqs = [
   {
     question: 'Honnan tudhatom, melyik folyamat való nekem?',
-    answer: 'Az első 20 perces beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk.',
+    answer: 'A 20 perces, díjmentes ismerkedő beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk.',
   },
   {
     question: 'Mennyibe kerül egy alkalom?',
@@ -109,7 +112,11 @@ export const faqs = [
   },
   {
     question: 'Online vagy személyesen találkozunk?',
-    answer: 'Az alkalmak online zajlanak, így bárhonnan csatlakozhatsz egy nyugodt, zavartalan helyről. A személyes találkozás lehetőségéről az első beszélgetésen egyeztetünk.',
+    answer: 'A segítő beszélgetéseket személyesen, Budapesten a XI. kerületben, és online is tartom. Az angolórák online is elérhetők, így bárhonnan csatlakozhatsz; a részleteket az ismerkedő beszélgetésen egyeztetjük.',
+  },
+  {
+    question: 'Milyen nyelvvizsgára készítesz fel?',
+    answer: 'Minden nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgára (például Origó, Euroexam, BME, telc) vállalok felkészítést, alap-, közép- és felsőfokon.',
   },
   {
     question: 'Mi történik, ha félek angolul megszólalni?',
@@ -121,14 +128,27 @@ export const faqs = [
   },
 ];
 
+/** About section: Anna's own text, verbatim (first paragraph is the serif lead). */
+export const aboutParagraphs = [
+  '1969-ben születtem, s mivel szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.',
+  'Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.',
+  'Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a SOTE mentálhigiénés képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.',
+];
+export const ABOUT_STAMP = 'ELTE · SOTE';
+
+/** Consent checkbox text; CONSENT_LINK is rendered as a link to the privacy notice. */
+export const CONSENT_BEFORE = 'Elolvastam az';
+export const CONSENT_LINK = 'adatkezelési tájékoztatót';
+export const CONSENT_AFTER = ', és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat – az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is – a kapcsolatfelvétel és a válaszadás céljából kezelje.';
+
 export const methodSteps = [
-  { number: '01', title: 'Kapcsolódunk', text: 'Egy rövid online beszélgetésen megismerjük egymást és a kérdésedet.', word: 'hello' },
+  { number: '01', title: 'Kapcsolódunk', text: 'Egy rövid, díjmentes online ismerkedő beszélgetésen megismerjük egymást és a kérdésedet.', word: 'hello' },
   { number: '02', title: 'Irányt találunk', text: 'Közösen megfogalmazzuk, miben szeretnél változást, és mi segíthet ebben.', word: 'notice' },
   { number: '03', title: 'Haladunk', text: 'A saját tempódban gyakorlunk, reflektálunk, és időről időre ránézünk a megtett útra.', word: 'grow' },
 ];
 
 export const contactPromises = [
-  { number: '01', title: 'Első beszélgetés', subline: '20 perc, online' },
+  { number: '01', title: 'Díjmentes ismerkedő beszélgetés', subline: '20 perc, online' },
   { number: '02', title: 'Válasz egy munkanapon belül', subline: 'e-mailben vagy telefonon' },
 ];
 
@@ -140,3 +160,90 @@ export const values = [
 ];
 
 export const topics = ['Mentálhigiénés beszélgetés', 'Angolóra', 'Mindkettő', 'Egyéb'];
+
+/**
+ * Privacy notice and imprint. Inline links use the tiny syntax [label|href]; page.tsx renders them.
+ * Tegező, first person (the controller speaks), like the rest of the site.
+ */
+export const PRIVACY_TITLE = 'Adatkezelési tájékoztató';
+export const IMPRINT_TITLE = 'Impresszum';
+
+export type PrivacySection = { title: string; paragraphs?: string[]; items?: string[]; after?: string[] };
+
+export const privacySections: PrivacySection[] = [
+  {
+    title: 'Az adatkezelő',
+    paragraphs: [
+      `Az adatkezelő ${OWNER_NAME}. Kapcsolat: [${CONTACT_EMAIL}|mailto:${CONTACT_EMAIL}].`,
+      'Ez a tájékoztató arról szól, hogyan kezelem azokat a személyes adatokat, amelyeket a kapcsolatfelvételi űrlap kitöltésekor megadsz.',
+    ],
+  },
+  {
+    title: 'Milyen adatokat kezelek?',
+    paragraphs: ['Az űrlap elküldésekor a következő adatokat kapom meg:'],
+    items: [
+      'a neved és az e-mail-címed,',
+      'a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),',
+      'hogy miről szeretnél beszélni (az érdeklődés témája),',
+      'hogy melyik elérhetőségen válaszoljak,',
+      'az üzeneted szövege.',
+    ],
+    after: [
+      'Az üzenetedben megoszthatsz az egészségi állapotodra vagy a lelki helyzetedre vonatkozó információt is. Ez különleges kategóriájú személyes adatnak minősülhet. Kérlek, csak annyit írj le, amennyit a kapcsolatfelvételhez fontosnak tartasz.',
+    ],
+  },
+  {
+    title: 'Mire használom az adatokat?',
+    paragraphs: [
+      'Az adatokat arra használom, hogy felvegyem veled a kapcsolatot, válaszoljak az üzenetedre, és egyeztessem az első, ismerkedő beszélgetést. Más célra nem használom őket.',
+    ],
+  },
+  {
+    title: 'Mi az adatkezelés jogalapja?',
+    paragraphs: [
+      'Az adatkezelés jogalapja a hozzájárulásod: az általános adatvédelmi rendelet (GDPR) 6. cikk (1) bekezdés a) pontja. Ha az üzenetedben egészségi állapotra vonatkozó adatot is megosztasz, azt a kifejezett hozzájárulásod alapján kezelem (GDPR 9. cikk (2) bekezdés a) pontja).',
+      'A hozzájárulást az űrlapon a jelölőnégyzet bejelölésével adod meg. Megadása önkéntes, de nélküle az űrlap nem küldhető el. A hozzájárulást bármikor visszavonhatod, ha írsz a megadott e-mail-címre. A visszavonás nem érinti a korábbi adatkezelés jogszerűségét.',
+    ],
+  },
+  {
+    title: 'Meddig őrzöm meg az adatokat?',
+    paragraphs: [
+      'Az adatokat legfeljebb az érdeklődés lezárását követő 1 évig őrzöm meg, vagy addig, amíg vissza nem vonod a hozzájárulásodat, attól függően, melyik következik be előbb. Ezután törlöm őket.',
+    ],
+  },
+  {
+    title: 'Kik férnek hozzá az adatokhoz?',
+    paragraphs: ['Az üzenetedet és az oldalt a következő szolgáltatók segítségével működtetem:'],
+    items: [
+      'FormSubmit (formsubmit.co): az űrlap tartalmát e-mailben továbbítja a postafiókomba.',
+      'Google (Gmail): az a levelezési fiók, amelyben az üzeneted megérkezik és tárolódik.',
+      'GitHub (GitHub Pages): az oldal tárhelye. A kiszolgálói naplók technikai adatokat, például IP-címet rögzíthetnek.',
+    ],
+    after: [
+      'Előfordulhat, hogy ezek a szolgáltatók az adatokat az Európai Unión kívül is feldolgozzák. Ennek feltételeit az adott szolgáltató saját adatvédelmi tájékoztatója tartalmazza.',
+    ],
+  },
+  {
+    title: 'Sütik és nyomkövetés',
+    paragraphs: ['Az oldal nem használ követő, elemző (analitikai) vagy hirdetési sütiket.'],
+  },
+  {
+    title: 'Mik a jogaid?',
+    paragraphs: ['Kérheted az adataidhoz való hozzáférést, a helyesbítésüket, a törlésüket vagy a kezelésük korlátozását. Kérheted az adatok hordozhatóságát is, és bármikor visszavonhatod a hozzájárulásodat.'],
+    after: [
+      `Kérésedet e-mailben küldheted el a [${CONTACT_EMAIL}|mailto:${CONTACT_EMAIL}] címre. Egy hónapon belül válaszolok.`,
+    ],
+  },
+  {
+    title: 'Hová fordulhatsz panasszal?',
+    paragraphs: [
+      'Ha úgy érzed, hogy az adataid kezelése sérti a jogaidat, panaszt tehetsz a Nemzeti Adatvédelmi és Információszabadság Hatóságnál (NAIH): 1055 Budapest, Falk Miksa utca 9–11., e-mail: [ugyfelszolgalat@naih.hu|mailto:ugyfelszolgalat@naih.hu], honlap: [www.naih.hu|https://www.naih.hu]. Bírósághoz is fordulhatsz.',
+    ],
+  },
+];
+
+export const imprint: { label: string; value: string }[] = [
+  { label: 'Üzemeltető', value: OWNER_NAME },
+  { label: 'E-mail', value: `[${CONTACT_EMAIL}|mailto:${CONTACT_EMAIL}]` },
+  { label: 'Tárhelyszolgáltató', value: 'GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA' },
+];

@@ -52,6 +52,32 @@ try {
 
 const c = mod.content;
 
+/* ---- expected contact e-mail: the site's public contact address (fail closed, no SKIP path) ---- */
+// Hard-coded on purpose, never read from app/ (circular); EXPECTED_CONTACT_EMAIL may override it.
+const EMAIL = (process.env.EXPECTED_CONTACT_EMAIL ?? "").trim() || "juhasznagyanna@gmail.com";
+
+/* ---- v2 spec strings (expectations come from the spec, not from content.ts) ---- */
+const MIND_SCOPE = "Segítő beszélgetés felnőtteknek, fiataloknak és gyermekeknek";
+const OLD_AUDIENCE = "Felnőtteknek, gyermekeknek és fiataloknak";
+const LANG_SCOPE = "Felkészítés nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgákra (például Origó, Euroexam, BME, telc)";
+const LANG_LEVEL = "Alap-, közép- és felsőfokon";
+const EXAM_Q = "Milyen nyelvvizsgára készítesz fel?";
+const EXAM_A = "Minden nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgára (például Origó, Euroexam, BME, telc) vállalok felkészítést, alap-, közép- és felsőfokon.";
+const INPERSON_Q = "Online vagy személyesen találkozunk?";
+const INPERSON_A = "A segítő beszélgetéseket személyesen, Budapesten a XI. kerületben, és online is tartom. Az angolórák online is elérhetők, így bárhonnan csatlakozhatsz; a részleteket az ismerkedő beszélgetésen egyeztetjük.";
+const HERO_FACT = "60 perces alkalmak, személyesen és online";
+const ABOUT = [
+  "1969-ben születtem, s mivel szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.",
+  "Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.",
+  "Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a SOTE mentálhigiénés képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.",
+];
+const REMOVED = [
+  "Anna vagyok, mentálhigiénés segítő szakember és angoltanár",
+  "Abban hiszek, hogy a valódi tanulás és változás ugyanonnan indul",
+  "Nem kész receptekkel érkezem",
+];
+const noSpace = (x) => x.replace(/[\s\u00a0]+/g, "");
+
 /* ---- tiny HTML helpers (the output is React's, so it is well formed) ---- */
 const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const decode = (s) =>
@@ -117,8 +143,15 @@ for (const service of c.services) {
     check(!has(t, other.price), `${service.slug} card does not contain the ${other.slug} price`);
   }
   check(has(t, service.name), `${service.slug} card contains its name`);
-  if (service.scope) check(has(t, service.scope), `${service.slug} card contains its scope line`);
-  if (service.audience) check(has(t, service.audience), `${service.slug} card contains its audience line`);
+  if (service.slug === "mind") {
+    check(has(t, MIND_SCOPE), "mind card contains the v2 scope line");
+    check(!has(t, OLD_AUDIENCE), "mind card has no separate audience line");
+    check(!/pszichológiai/i.test(t), "mind card has no psychology wording");
+  }
+  if (service.slug === "language") {
+    check(has(t, LANG_SCOPE), "language card contains the exam scope line");
+    check(has(t, LANG_LEVEL), "language card contains the level line");
+  }
   const chips = elements(card.inner, "li", /^<li/).map((el) => text(el.inner));
   for (const chip of service.chips) check(chips.includes(norm(chip)), `${service.slug} card has chip ${chip}`);
 }
@@ -170,11 +203,116 @@ for (const item of c.testimonials) {
   }
 }
 
+{
+  const details = elements(html, "details", /^<details/);
+  const answerOf = (q) => {
+    const d = details.find((el) => has(text(elements(el.inner, "summary", /^<summary/)[0]?.inner ?? ""), q));
+    return d ? elements(d.inner, "p", /^<p/).map((el) => text(el.inner)).join(" ") : null;
+  };
+  const exam = answerOf(EXAM_Q);
+  check(exam !== null, "FAQ contains the exam question");
+  check(exam !== null && norm(exam) === norm(EXAM_A), "FAQ exam answer equals the v2 text", String(exam));
+  const inperson = answerOf(INPERSON_Q);
+  check(inperson !== null, "FAQ contains the in-person question");
+  check(inperson !== null && norm(inperson) === norm(INPERSON_A), "FAQ in-person answer equals the v2 text", String(inperson));
+}
+
+/* ---- hero fact ---- */
+{
+  const facts = elements(html, "p", /class="[^"]*\bhero-fact\b/).map((el) => noSpace(text(el.inner)));
+  check(facts.length === 1 && facts[0] === noSpace(HERO_FACT), "hero fact equals the v2 text", JSON.stringify(facts));
+}
+
+/* ---- about section ---- */
+{
+  const about = elements(html, "section", /id="rolam"/)[0];
+  check(Boolean(about), "about section (#rolam) rendered");
+  if (about) {
+    const t = text(about.inner);
+    const countOf = (hay, needle) => norm(hay).split(norm(needle)).length - 1;
+    ABOUT.forEach((para, i) => {
+      const n = countOf(t, para);
+      check(n === 1, `about paragraph ${i + 1} appears exactly once`, `count ${n}`);
+    });
+    const leads = elements(about.inner, "p", /class="[^"]*\blead-serif\b/).map((el) => text(el.inner));
+    check(leads.length === 1 && norm(leads[0]) === norm(ABOUT[0]), "serif lead element holds paragraph 1 only", JSON.stringify(leads).slice(0, 80));
+    for (const gone of REMOVED) check(countOf(t, gone) === 0, `about lacks removed sentence "${gone.slice(0, 24)}"`);
+    const stamps = elements(about.inner, "span", /class="[^"]*\bstamp\b/).map((el) => text(el.inner));
+    check(stamps.length === 1 && stamps[0] === "ELTE · SOTE", "stamp text is ELTE · SOTE", JSON.stringify(stamps));
+  }
+}
+
 /* ---- optional links ---- */
 const visible = text(html);
-for (const [constant, label] of [["INSTAGRAM_URL", "Instagram"], ["PRIVACY_URL", "Adatkezelés"]]) {
-  if (c[constant] == null) check(!visible.includes(label), `no "${label}" text while ${constant} is null`);
-  else check(visible.includes(label), `"${label}" renders when ${constant} is set`);
+const allHrefs = [...html.matchAll(/<a\b[^>]*>/g)].map((m) => attr(m[0], "href"));
+for (const [constant, label, host] of [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL", "Facebook", "facebook.com"]]) {
+  check(constant in c, `${constant} is exported by content.ts`);
+  if (c[constant] == null) {
+    check(!allHrefs.some((h) => h && h.includes(host)), `no ${host} link while ${constant} is null`);
+    check(!visible.includes(label), `no "${label}" text while ${constant} is null`);
+  } else {
+    check(allHrefs.includes(c[constant]), `${label} link renders when ${constant} is set`);
+  }
+}
+const anchorsIn = (fragment) =>
+  [...fragment.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ href: attr(m[0].match(/<a\b[^>]*>/)[0], "href"), label: text(m[1]) }));
+{
+  const footer = elements(html, "footer", /^<footer/)[0];
+  check(Boolean(footer), "footer rendered");
+  if (footer) {
+    const links = anchorsIn(footer.inner);
+    check(links.some((l) => l.label === "Adatkezelés" && l.href === "#adatkezeles"), "footer has an Adatkezelés link to #adatkezeles", JSON.stringify(links));
+    check(has(text(footer.inner), "Juhász Nagy Anna"), "footer contains Juhász Nagy Anna");
+  }
+}
+
+/* ---- privacy notice ---- */
+{
+  let priv;
+  for (const tag of ["section", "div", "aside", "article", "main"]) {
+    priv = elements(html, tag, /\sid="adatkezeles"/)[0];
+    if (priv) break;
+  }
+  check(Boolean(priv), "section with id=\"adatkezeles\" exists");
+  if (priv) {
+    const t = text(priv.inner);
+    const heads = [...priv.inner.matchAll(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/g)].map((m) => text(m[1]));
+    check(heads.includes("Adatkezelési tájékoztató"), "privacy section has the heading Adatkezelési tájékoztató", JSON.stringify(heads));
+    for (const needle of ["Juhász Nagy Anna", "formsubmit.co", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
+      check(has(t, needle), `privacy section contains "${needle}"`);
+    }
+    check(has(t, "NAIH") || has(t, "Nemzeti Adatvédelmi és Információszabadság Hatóság"), "privacy section names NAIH");
+    check(t.includes(EMAIL), "privacy section contains the expected contact e-mail");
+    const PHONE_ITEM = "a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),";
+    const items = elements(priv.inner, "li", /^<li/).map((el) => text(el.inner));
+    check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
+    const bad = [];
+    let inspected = 0;
+    for (const m of priv.inner.matchAll(/<a\b[^>]*>/g)) {
+      const href = (attr(m[0], "href") ?? "").trim();
+      const target = attr(m[0], "target");
+      const rel = attr(m[0], "rel") ?? "";
+      if (/^(https?:)?\/\//i.test(href)) {
+        inspected++;
+        if (target !== "_blank" || !/\bnoopener\b/i.test(rel)) bad.push(href);
+      } else if (/^mailto:/i.test(href) || href.startsWith("#")) {
+        inspected++;
+        if (target !== null) bad.push(href);
+      }
+    }
+    check(bad.length === 0 && inspected > 0, `privacy links (${inspected} inspected): external open in a new tab with noopener; mailto and # have no target`, JSON.stringify(bad));
+  }
+}
+
+/* ---- consent label ---- */
+{
+  const label = elements(html, "label", /class="[^"]*\bconsent-field\b/)[0];
+  check(Boolean(label), "consent label rendered");
+  if (label) {
+    const links = anchorsIn(label.inner);
+    check(links.some((l) => l.href === "#adatkezeles" && l.label === "adatkezelési tájékoztatót"), "consent label links adatkezelési tájékoztatót to #adatkezeles", JSON.stringify(links));
+    check(has(text(label.inner), "egészségemmel kapcsolatos"), "consent label mentions egészségemmel kapcsolatos");
+  }
 }
 
 /* ---- anchors ---- */
@@ -182,6 +320,19 @@ for (const [constant, label] of [["INSTAGRAM_URL", "Instagram"], ["PRIVACY_URL",
   const tops = [...html.matchAll(/<a\b[^>]*\shref="#top"[^>]*>/g)].map((m) => m[0]);
   check(tops.length === 2, "exactly two href=\"#top\" links", `found ${tops.length}`);
   check(tops.every((tag) => /class="[^"]*\bbrand\b/.test(tag)), "every href=\"#top\" link is a brand link");
+}
+
+/* ---- focusable sections (mobile nav targets) ---- */
+for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) {
+  const sec = elements(html, "section", new RegExp(`\\sid="${id}"`))[0];
+  if (!sec) {
+    check(false, `section #${id} rendered`);
+    continue;
+  }
+  check(attr(sec.open, "tabindex") === "-1", `section #${id} has tabindex="-1"`, sec.open);
+  const lb = attr(sec.open, "aria-labelledby");
+  const target = lb ? elements(html, "[a-z0-9]+", new RegExp(`\\sid="${lb.replace(/[^\w-]/g, "")}"`))[0] : null;
+  check(Boolean(lb) && Boolean(target) && text(target.inner) !== "", `section #${id} aria-labelledby points to a non-empty element`, String(lb));
 }
 
 /* ---- link hygiene ---- */
@@ -200,6 +351,13 @@ for (const [constant, label] of [["INSTAGRAM_URL", "Instagram"], ["PRIVACY_URL",
   check(Boolean(form), "contact form rendered");
   if (form) {
     check(attr(form.open, "action") === c.FORM_ENDPOINT, "form action equals FORM_ENDPOINT", String(attr(form.open, "action")));
+    check(attr(form.open, "action") === `https://formsubmit.co/${EMAIL}`, "form action equals https://formsubmit.co/<expected e-mail>");
+    check(c.FORM_ENDPOINT === `https://formsubmit.co/${EMAIL}`, "FORM_ENDPOINT equals https://formsubmit.co/<expected e-mail>", String(c.FORM_ENDPOINT));
+    check(c.FORM_AJAX_ENDPOINT === `https://formsubmit.co/ajax/${EMAIL}`, "FORM_AJAX_ENDPOINT equals https://formsubmit.co/ajax/<expected e-mail>", String(c.FORM_AJAX_ENDPOINT));
+    const fieldOrder = [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => attr(m[0], "name"));
+    const iSel = fieldOrder.indexOf("Preferált elérhetőség");
+    const iTel = fieldOrder.indexOf("Telefonszám");
+    check(iSel >= 0 && iTel >= 0 && iSel < iTel, "contact preference select comes before the phone input", `select ${iSel}, phone ${iTel}`);
     check((attr(form.open, "method") ?? "").toLowerCase() === "post", "form method is POST");
     const names = new Set(
       [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)]

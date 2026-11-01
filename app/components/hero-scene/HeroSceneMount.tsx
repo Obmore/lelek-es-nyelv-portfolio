@@ -5,6 +5,7 @@
 // lives in its own lazy chunk.
 import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { subscribeMedia } from '../../lib/media';
 import { SCENE_ALLOW_QUERIES, SCENE_DENY_QUERY, sceneMediaAllowed, shouldUseHeroScene } from './capability';
 
 const HeroScene = lazy(() => import('./HeroScene'));
@@ -64,12 +65,8 @@ export default function HeroSceneMount({ onActiveChange }: { onActiveChange: (ac
       setEnabled(false);
       onActiveChange(false);
     };
-    // Safari < 14 only has the legacy addListener/removeListener on MediaQueryList.
-    lists.forEach((list) => (list.addEventListener ? list.addEventListener('change', onChange) : list.addListener(onChange)));
-    return () =>
-      lists.forEach((list) =>
-        list.removeEventListener ? list.removeEventListener('change', onChange) : list.removeListener(onChange),
-      );
+    const unsubscribes = lists.map((list) => subscribeMedia(list, onChange));
+    return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
   }, [onActiveChange]);
 
   const fail = () => {
