@@ -1,48 +1,79 @@
 #!/usr/bin/env node
-// Server-renders app/page.tsx and asserts on the produced HTML, element by element.
+// Server-renders app/page.tsx and app/adatkezeles/page.tsx and asserts on the produced HTML, element by element.
 // Expected values are imported from app/content.ts (bundled with the page), never hard-coded here.
 // Usage: node scripts/verify-render.mjs
 // Exit: 0 all pass, 1 any check failed, 2 environment problem (bundling or rendering failed).
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "node_modules", ".cache", "verify-render");
 const outFile = join(outDir, "bundle.mjs");
+const privacyFile = join(outDir, "privacy.mjs");
+
+const esbuildOptions = (outfile) => ({
+  outfile,
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  target: "node22",
+  jsx: "automatic",
+  logLevel: "silent",
+  // three.js and R3F live in the lazy scene chunk, which never renders on the server.
+  external: ["react", "react-dom", "react-dom/*", "react/*", "three", "three/*", "@react-three/fiber"],
+});
 
 let mod;
+let privacyError = "";
 try {
   const { build } = await import("esbuild");
   mkdirSync(outDir, { recursive: true });
   await build({
+    ...esbuildOptions(outFile),
     stdin: {
       contents: "export { default as Home } from './app/page.tsx';\nexport * as content from './app/content.ts';\n",
       resolveDir: root,
       sourcefile: "verify-render-entry.ts",
       loader: "ts",
     },
-    outfile: outFile,
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: "node22",
-    jsx: "automatic",
-    logLevel: "silent",
-    // three.js and R3F live in the lazy scene chunk, which never renders on the server.
-    external: ["react", "react-dom", "react-dom/*", "react/*", "three", "three/*", "@react-three/fiber"],
   });
   mod = await import(`${pathToFileURL(outFile).href}?t=${Date.now()}`);
+  // The privacy page is bundled on its own: a missing or broken page is a failed check, not an environment error.
+  try {
+    await build({
+      ...esbuildOptions(privacyFile),
+      stdin: {
+        contents: "export { default as Privacy } from './app/adatkezeles/page.tsx';\n",
+        resolveDir: root,
+        sourcefile: "verify-render-privacy-entry.ts",
+        loader: "ts",
+      },
+    });
+  } catch (error) {
+    privacyError = `bundling app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+  }
 } catch (error) {
   console.error(`verify-render: bundling failed: ${error instanceof Error ? error.message : error}`);
   process.exit(2);
 }
 
 let html;
+let privacyHtml = null;
+let bundleText = "";
 try {
   const { createElement } = await import("react");
   const { renderToString } = await import("react-dom/server");
   html = renderToString(createElement(mod.Home));
+  bundleText = readFileSync(outFile, "utf8");
+  if (!privacyError) {
+    try {
+      const privacyMod = await import(`${pathToFileURL(privacyFile).href}?t=${Date.now()}`);
+      privacyHtml = renderToString(createElement(privacyMod.Privacy));
+    } catch (error) {
+      privacyError = `rendering app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+    }
+  }
 } catch (error) {
   console.error(`verify-render: render failed: ${error instanceof Error ? error.message : error}`);
   process.exit(2);
@@ -255,54 +286,71 @@ for (const [constant, label, host] of [["INSTAGRAM_URL", "Instagram", "instagram
   }
 }
 const anchorsIn = (fragment) =>
-  [...fragment.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ href: attr(m[0].match(/<a\b[^>]*>/)[0], "href"), label: text(m[1]) }));
+  [...fragment.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => {
+    const open = m[0].match(/<a\b[^>]*>/)[0];
+    return { open, href: attr(open, "href"), label: text(m[1]), inner: m[1] };
+  });
 {
   const footer = elements(html, "footer", /^<footer/)[0];
   check(Boolean(footer), "footer rendered");
   if (footer) {
     const links = anchorsIn(footer.inner);
-    check(links.some((l) => l.label === "Adatkezelés" && l.href === "#adatkezeles"), "footer has an Adatkezelés link to #adatkezeles", JSON.stringify(links));
+    check(links.some((l) => l.label === "Adatkezelés" && l.href === "adatkezeles/"), "footer has an Adatkezelés link to adatkezeles/", JSON.stringify(links));
     check(has(text(footer.inner), "Juhász Nagy Anna"), "footer contains Juhász Nagy Anna");
   }
 }
 
-/* ---- privacy notice ---- */
-{
-  let priv;
-  for (const tag of ["section", "div", "aside", "article", "main"]) {
-    priv = elements(html, tag, /\sid="adatkezeles"/)[0];
-    if (priv) break;
+/* ---- privacy notice: no longer on the home page ---- */
+check(c.PRIVACY_URL === "adatkezeles/", "PRIVACY_URL equals adatkezeles/", JSON.stringify(c.PRIVACY_URL));
+check(!/\sid="adatkezeles"/.test(html), "home page has no element with id=\"adatkezeles\"");
+check(!/Adatkezelési tájékoztató(?![\p{L}])|Impresszum/u.test(text(html)), "home page has no privacy notice heading or imprint text");
+
+/* ---- privacy page (app/adatkezeles/page.tsx) ---- */
+check(privacyHtml !== null, "privacy page app/adatkezeles/page.tsx renders", privacyError);
+if (privacyHtml !== null) {
+  const t = text(privacyHtml);
+  const h1s = [...privacyHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map((m) => text(m[1]));
+  check(h1s.length === 1 && h1s[0] === "Adatkezelési tájékoztató", "privacy page has one <h1> Adatkezelési tájékoztató", JSON.stringify(h1s));
+  for (const needle of ["Juhász Nagy Anna", "formsubmit.co", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
+    check(has(t, needle), `privacy page contains "${needle}"`);
   }
-  check(Boolean(priv), "section with id=\"adatkezeles\" exists");
-  if (priv) {
-    const t = text(priv.inner);
-    const heads = [...priv.inner.matchAll(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/g)].map((m) => text(m[1]));
-    check(heads.includes("Adatkezelési tájékoztató"), "privacy section has the heading Adatkezelési tájékoztató", JSON.stringify(heads));
-    for (const needle of ["Juhász Nagy Anna", "formsubmit.co", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
-      check(has(t, needle), `privacy section contains "${needle}"`);
+  check(has(t, "NAIH") || has(t, "Nemzeti Adatvédelmi és Információszabadság Hatóság"), "privacy page names NAIH");
+  check(t.includes(EMAIL), "privacy page contains the expected contact e-mail");
+  const mains = elements(privacyHtml, "main", /^<main/);
+  const mainLabel = mains.length === 1 ? attr(mains[0].open, "aria-labelledby") : null;
+  const h1Ids = [...privacyHtml.matchAll(/<h1\b[^>]*>/g)].map((m) => attr(m[0], "id"));
+  check(Boolean(mainLabel) && h1Ids.length === 1 && h1Ids[0] === mainLabel, "privacy page: <main> aria-labelledby points to the h1 id", JSON.stringify({ mains: mains.length, mainLabel, h1Ids }));
+  check(!/\sid="top"/.test(privacyHtml), "privacy page has no element with id=\"top\"");
+  const PHONE_ITEM = "a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),";
+  const items = elements(privacyHtml, "li", /^<li/).map((el) => text(el.inner));
+  check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
+  const privAnchors = anchorsIn(privacyHtml);
+  const privLinks = privAnchors.map((a) => a.open);
+  check(privAnchors.some((a) => a.href === "../"), "privacy page links back to the home page with href=\"../\"");
+  const bad = [];
+  let inspected = 0;
+  for (const open of privLinks) {
+    const href = (attr(open, "href") ?? "").trim();
+    const target = attr(open, "target");
+    const rel = attr(open, "rel") ?? "";
+    if (/^(https?:)?\/\//i.test(href)) {
+      inspected++;
+      if (target !== "_blank" || !/\bnoopener\b/i.test(rel)) bad.push(href);
+    } else if (/^mailto:/i.test(href) || href.startsWith("#")) {
+      inspected++;
+      if (target !== null) bad.push(href);
     }
-    check(has(t, "NAIH") || has(t, "Nemzeti Adatvédelmi és Információszabadság Hatóság"), "privacy section names NAIH");
-    check(t.includes(EMAIL), "privacy section contains the expected contact e-mail");
-    const PHONE_ITEM = "a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),";
-    const items = elements(priv.inner, "li", /^<li/).map((el) => text(el.inner));
-    check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
-    const bad = [];
-    let inspected = 0;
-    for (const m of priv.inner.matchAll(/<a\b[^>]*>/g)) {
-      const href = (attr(m[0], "href") ?? "").trim();
-      const target = attr(m[0], "target");
-      const rel = attr(m[0], "rel") ?? "";
-      if (/^(https?:)?\/\//i.test(href)) {
-        inspected++;
-        if (target !== "_blank" || !/\bnoopener\b/i.test(rel)) bad.push(href);
-      } else if (/^mailto:/i.test(href) || href.startsWith("#")) {
-        inspected++;
-        if (target !== null) bad.push(href);
-      }
-    }
-    check(bad.length === 0 && inspected > 0, `privacy links (${inspected} inspected): external open in a new tab with noopener; mailto and # have no target`, JSON.stringify(bad));
   }
+  check(bad.length === 0 && inspected > 0, `privacy links (${inspected} inspected): external open in a new tab with noopener; mailto and # have no target`, JSON.stringify(bad));
+  const badPrivHrefs = privAnchors.map((a) => a.href).filter((h) => h == null || h.trim() === "" || h.trim() === "#" || /^(null|undefined)$/.test(h.trim()));
+  check(badPrivHrefs.length === 0, "privacy page: no <a> has an empty, #-only or null/undefined href", JSON.stringify(badPrivHrefs));
+  const pIds = new Set([...privacyHtml.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]));
+  const pDangling = privAnchors.map((a) => a.href).filter((h) => h && h.length > 1 && h.startsWith("#") && !pIds.has(h.slice(1)));
+  check(pDangling.length === 0, "privacy page: every href=\"#id\" has a matching id", JSON.stringify(pDangling));
 }
+
+/* ---- old #adatkezeles links are forwarded to the privacy page (checked on the bundled page source, minification-independent) ---- */
+check(bundleText.includes("#adatkezeles") && bundleText.includes("location.replace("), "home page bundle forwards #adatkezeles to the privacy page (#adatkezeles + location.replace( in source)");
 
 /* ---- consent label ---- */
 {
@@ -310,7 +358,12 @@ const anchorsIn = (fragment) =>
   check(Boolean(label), "consent label rendered");
   if (label) {
     const links = anchorsIn(label.inner);
-    check(links.some((l) => l.href === "#adatkezeles" && l.label === "adatkezelési tájékoztatót"), "consent label links adatkezelési tájékoztatót to #adatkezeles", JSON.stringify(links));
+    check(links.some((l) => l.href === "adatkezeles/" && l.label.replace(/\s*\(új lapon nyílik\)$/, "") === "adatkezelési tájékoztatót"), "consent label links adatkezelési tájékoztatót to adatkezeles/", JSON.stringify(links));
+    const consentLink = links.find((l) => l.href === "adatkezeles/");
+    const hints = consentLink ? elements(consentLink.inner, "[a-z0-9]+", /class="[^"]*\bsr-only\b/).map((el) => text(el.inner)) : [];
+    check(hints.length === 1 && hints[0] === "(új lapon nyílik)", "consent privacy link contains an .sr-only \"(új lapon nyílik)\" new-tab hint", JSON.stringify(hints));
+    const consentOpen = [...label.inner.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]).find((o) => attr(o, "href") === "adatkezeles/");
+    check(Boolean(consentOpen) && attr(consentOpen, "target") === "_blank" && /\bnoopener\b/i.test(attr(consentOpen, "rel") ?? ""), "consent privacy link has target=\"_blank\" and rel containing noopener", String(consentOpen));
     check(has(text(label.inner), "egészségemmel kapcsolatos"), "consent label mentions egészségemmel kapcsolatos");
   }
 }
@@ -342,7 +395,7 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
   check(bad.length === 0, "no <a> has an empty, #-only or null/undefined href", JSON.stringify(bad));
   const ids = new Set([...html.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]));
   const dangling = hrefs.filter((h) => h && h.length > 1 && h.startsWith("#") && !ids.has(h.slice(1)));
-  check(dangling.length === 0, "every href=\"#id\" has a matching id", JSON.stringify(dangling));
+  check(dangling.length === 0, "home page: every href=\"#id\" has a matching id", JSON.stringify(dangling));
 }
 
 /* ---- contact form ---- */

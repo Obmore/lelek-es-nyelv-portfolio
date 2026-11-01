@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import SiteFooter from './components/SiteFooter';
 import HeroSceneMount from './components/hero-scene/HeroSceneMount';
 import { subscribeMedia } from './lib/media';
 import {
@@ -9,20 +10,13 @@ import {
   CONSENT_BEFORE,
   CONSENT_LINK,
   CONTACT_EMAIL,
-  FACEBOOK_URL,
   FORM_AJAX_ENDPOINT,
   FORM_ENDPOINT,
-  IMPRINT_TITLE,
-  INSTAGRAM_URL,
-  OWNER_NAME,
-  PRIVACY_TITLE,
   PRIVACY_URL,
   aboutParagraphs,
   contactPromises,
   faqs,
-  imprint,
   methodSteps,
-  privacySections,
   services,
   testimonials,
   topics,
@@ -30,30 +24,9 @@ import {
 } from './content';
 
 const MAX_TILT = 6; // degrees
-const subscribeNever = () => () => {};
 const FORM_TIMEOUT_MS = 25000;
 const DEFAULT_REPLY = 'E-mailben';
 const PHONE_REPLY = 'Telefonon';
-
-const EXTERNAL_HREF = /^(?:https?:)?\/\//i;
-
-/** Renders text with inline [label|href] links (privacy notice and imprint strings from content.ts). */
-function renderInline(text: string) {
-  const parts = text.split(/\[([^|\]]+)\|([^\]]+)\]/);
-  const nodes: React.ReactNode[] = [];
-  for (let i = 0; i < parts.length; i += 3) {
-    if (parts[i]) nodes.push(parts[i]);
-    if (i + 2 < parts.length) {
-      const href = parts[i + 2];
-      nodes.push(
-        <a key={i} href={href} {...(EXTERNAL_HREF.test(href) ? { rel: 'noopener noreferrer', target: '_blank' } : {})}>
-          {parts[i + 1]}
-        </a>,
-      );
-    }
-  }
-  return nodes;
-}
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,9 +38,19 @@ export default function Home() {
   const progressRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
   const [replyPref, setReplyPref] = useState(DEFAULT_REPLY);
-  // The footer year is computed at render time: remount it after hydration so a New Year mismatch never sticks.
-  const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const phoneRequired = replyPref === PHONE_REPLY;
+
+  // The notice moved to its own page: forward old #adatkezeles links.
+  useEffect(() => {
+    const target = PRIVACY_URL;
+    if (!target) return;
+    const forward = () => {
+      if (window.location.hash === '#adatkezeles') window.location.replace(target);
+    };
+    forward();
+    window.addEventListener('hashchange', forward);
+    return () => window.removeEventListener('hashchange', forward);
+  }, []);
 
   // Scroll reveal. Content stays visible unless IntersectionObserver is available.
   useEffect(() => {
@@ -568,7 +551,14 @@ export default function Home() {
               <input type="checkbox" name="Adatkezelési hozzájárulás" value="Elfogadva" required />
               <span>
                 {CONSENT_BEFORE}{' '}
-                <a href="#adatkezeles">{CONSENT_LINK}</a>
+                {PRIVACY_URL ? (
+                  <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+                    {CONSENT_LINK}
+                    <span className="sr-only">{' (új lapon nyílik)'}</span>
+                  </a>
+                ) : (
+                  CONSENT_LINK
+                )}
                 {CONSENT_AFTER}
               </span>
             </label>
@@ -590,53 +580,9 @@ export default function Home() {
             </div>
           </form>
         </section>
-
-        <section className="privacy" id="adatkezeles" aria-labelledby="privacy-title">
-          <div className="privacy-inner">
-            <p className="section-kicker">Jogi tájékoztató</p>
-            <h2 id="privacy-title">{PRIVACY_TITLE}</h2>
-            {privacySections.map((section) => (
-              <div className="privacy-block" key={section.title}>
-                <h3>{section.title}</h3>
-                {section.paragraphs?.map((text) => <p key={text}>{renderInline(text)}</p>)}
-                {section.items && (
-                  <ul>
-                    {section.items.map((item) => <li key={item}>{renderInline(item)}</li>)}
-                  </ul>
-                )}
-                {section.after?.map((text) => <p key={text}>{renderInline(text)}</p>)}
-              </div>
-            ))}
-            <div className="privacy-block privacy-imprint">
-              <h3>{IMPRINT_TITLE}</h3>
-              <dl>
-                {imprint.map((row) => (
-                  <div key={row.label}>
-                    <dt>{row.label}</dt>
-                    <dd>{renderInline(row.value)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </section>
       </main>
 
-      <footer>
-        <a className="brand footer-brand" href="#top" aria-label="Vissza az oldal tetejére">
-          <span className="brand-mark">A</span>
-          <span><strong>ANNA</strong><small>lélek &amp; nyelv</small></span>
-        </a>
-        <div className="footer-contact">
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          {INSTAGRAM_URL && <a href={INSTAGRAM_URL} rel="noopener noreferrer" target="_blank">Instagram ↗</a>}
-          {FACEBOOK_URL && <a href={FACEBOOK_URL} rel="noopener noreferrer" target="_blank">Facebook ↗</a>}
-        </div>
-        <div className="footer-small">
-          <span>© <span key={hydrated ? 'client' : 'server'} suppressHydrationWarning>{new Date().getFullYear()}</span> {OWNER_NAME}</span>
-          {PRIVACY_URL && <a href={PRIVACY_URL}>Adatkezelés</a>}
-        </div>
-      </footer>
+      <SiteFooter home />
     </>
   );
 }
