@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+// Verifies the built GitHub Pages site and the app/ source against the content spec.
+// Usage: node scripts/verify-content.mjs [--build]
+// Exit: 0 all pass, 1 any check failed, 2 environment problem (missing dist, build failure).
+import { spawnSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const distDir = join(root, "dist-github-pages");
+const appDir = join(root, "app");
+const NB = " ";
+
+if (process.argv.includes("--build")) {
+  const r = spawnSync("npm run build:github", { cwd: root, shell: true, stdio: "inherit" });
+  if (r.status !== 0) {
+    console.error(`verify-content: build failed (exit ${r.status ?? "signal"})`);
+    process.exit(2);
+  }
+}
+
+if (!existsSync(distDir) || !statSync(distDir).isDirectory()) {
+  console.error(`verify-content: missing directory ${distDir}`);
+  process.exit(2);
+}
+
+function walk(dir, exts, out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    const st = statSync(p);
+    if (st.isDirectory()) walk(p, exts, out);
+    else if (exts.some((e) => name.endsWith(e))) out.push(p);
+  }
+  return out;
+}
+
+const NAMED = { nbsp: NB, amp: "&", quot: '"', apos: "'", lt: "<", gt: ">",
+  ndash: "–", mdash: "—", hellip: "…", middot: "·",
+  bdquo: "„", rdquo: "”", ldquo: "“", laquo: "«", raquo: "»" };
+
+function cp(n) {
+  try { return String.fromCodePoint(n); } catch { return ""; }
+}
+
+function decode(s) {
+  // HTML comments (React SSR text separators)
+  s = s.replace(/<!--[\s\S]*?-->/g, "");
+  // JS escapes (single pass so "\\u00a0" style double escapes resolve stepwise below)
+  const jsEsc = (str) =>
+    str.replace(/\\(u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([nrt'"\\\/`]))/g,
+      (_, __, brace, u4, x2, ch) => {
+        if (brace) return cp(parseInt(brace, 16));
+        if (u4) return cp(parseInt(u4, 16));
+        if (x2) return cp(parseInt(x2, 16));
+        return { n: "\n", r: "\r", t: "\t" }[ch] ?? ch;
+      });
+  const htmlEnt = (str) =>
+    str.replace(/&(?:#x([0-9a-fA-F]+)|#(\d+)|([a-zA-Z][a-zA-Z0-9]*));/g, (m, hx, dc, nm) => {
+      if (hx) return cp(parseInt(hx, 16));
+      if (dc) return cp(parseInt(dc, 10));
+      return NAMED[nm] ?? m;
+    });
+  // two rounds handle JSON-in-JS double escaping (\\u00a0) and entity-in-string layering
+  for (let i = 0; i < 2; i++) s = htmlEnt(jsEsc(s));
+  // collapse ordinary whitespace only; NBSP is preserved
+  return s.replace(/[ \t\r\n\f]+/g, " ");
+}
+
+const norm = (s) => s.replace(/[ \t\r\n\f]+/g, " ");
+
+const builtFiles = walk(distDir, [".html", ".js", ".css", ".txt"]);
+if (builtFiles.length === 0) {
+  console.error(`verify-content: no .html/.js/.css files under ${distDir}`);
+  process.exit(2);
+}
+const built = builtFiles.map((f) => decode(readFileSync(f, "utf8"))).join("\n");
+const srcFiles = existsSync(appDir) ? walk(appDir, [".ts", ".tsx"]) : [];
+const source = srcFiles.map((f) => decode(readFileSync(f, "utf8"))).join("\n");
+
+const T1 = "Szeretném, szeretnénk megköszönni, amit értem tettél az elmúlt évben! Édesanyám a kommented megtalálva talált rád, hiszen én éppen angoltanárt kerestem C1-es nyelvvizsga-felkészítéshez. Szinte rögtön el is kezdtük a közös munkát, ami veled az egész tanulási folyamatot megkönnyítette. Végig emberközpontú, jó hangulatú és igényes órákat adtál nekem. Amellett, hogy ennyire figyelmes voltál velem, a lényeget nem hagyhatom ki: egy év alatt egy erős B2-es szintről elvezettél egy fantasztikus C1-es tudásszintig, amit egy kiváló felsőfokú nyelvvizsgával igazoltam. Hálásan köszönöm azt a mérhetetlen tudást és tapasztalatot, amit átadtál nekem (nemcsak az angol, hanem az élet területén is), illetve azt a rengeteg értékes beszélgetést, amikkel hozzájárultál a fejlődésemhez minden téren!";
+const T2 = "Szeretném megköszönni azt a fejlődési lehetőséget, amit a te segítségeddel tapasztaltam meg. C1-es nyelvvizsgára készültem, és anyukámon keresztül ismertelek meg. Nagyon sokat fejlődtem az óráidon, annak ellenére, hogy ezeken online tudtam csak részt venni, mivel messze lakom. Mindig jó hangulatban teltek az órák, vidám hangulatban haladtunk át a témakörökön, nyelvtani anyagokon, rengeteg tesztet kitöltve. Nekem elsőre sikerült a vizsgám, amiért nagyon hálás vagyok. A többletpontokkal, amiket ez a nyelvvizsga hozott számomra, bekerültem az egyetemre, ahova jelentkeztem. Egy csodás kaland volt!";
+const T3 = "Pannihoz segítő alkalmakra kezdtem járni, az elmúlt két évben rendszeresen találkoztunk. Nagyon szeretek vele beszélgetni, hiszen mindig kifejezetten pontos meglátást kapok tőle, miközben figyelmesen végighallgat. A beszélgetés segít nekem abban, hogy megértsem a saját helyzetemet, és a környezetemben lévő emberek, családtagok viselkedésének mozgatórugóit, de elsősorban abban segít, hogy megértsem magam, s ezáltal sokkal közelebb kerültem önmagamhoz. Az alkalmakról mindig könnyebb szívvel távozom, s valami olyan konklúzióval, ami segít az aktuális nehézségemmel való megküzdésben. Nagyon tudom ajánlani őt, mert egy nagyon kedves, együttérző, közvetlen és nyitott embert ismertem meg a személyében. Mindenkivel gyorsan megtalálja a közös hangot, vele könnyen biztonságban érezhetjük magunkat. Legyen szó bármilyen helyzetről, ő tud valami olyat mondani, ami közelebb visz minket a megoldáshoz!";
+
+const required = [
+  ["testimonial T1 text", T1],
+  ["testimonial T2 text", T2],
+  ["testimonial T3 text", T3],
+  ["T1 author", "Helle Jázmin"],
+  ["T2 author", "Pethő Marci"],
+  ["T3 author", "Barbara E."],
+  ["T1 label", "C1 nyelvvizsga-felkészítés · 1 év"],
+  ["T2 label", "C1 nyelvvizsga-felkészítés · online órák"],
+  ["T3 label", "Mentálhigiénés segítő beszélgetések · 2 év"],
+  ["price mental hygiene", `18${NB}000${NB}Ft / 60 perc`],
+  ["price English", `7000${NB}Ft / 60 perc`],
+  ["mental hygiene name", "Mentálhigiénés segítő beszélgetés"],
+  ["mental hygiene scope line", "Felnőtt-, gyermek- és ifjúságpszichológiai konzultáció"],
+  ["English name", "Angol oktatás"],
+  ["FAQ answer 1", "Az első 20 perces beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk."],
+  ["method step 01 text", "Egy rövid online beszélgetésen megismerjük egymást és a kérdésedet."],
+  ["contact promise title", "Első beszélgetés"],
+  ["contact promise subline", "20 perc, online"],
+  ["audience line", "Felnőtteknek, gyermekeknek és fiataloknak"],
+  ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is — a görcsös teljesítés helyett valódi kapcsolódással."],
+  ["chip nyelvvizsga-felkészítés", "nyelvvizsga-felkészítés"],
+];
+
+const ws = "[\\s\\u00a0]";
+const forbidden = [
+  ["díjmentes", /díjmentes/i],
+  ["ingyenes/ingyen", /ingyen/i],
+  ["word Réka", /(?<![\p{L}])Réka(?![\p{L}])/iu],
+  ["12+ év", new RegExp(`12\\+${ws}*év`, "i")],
+  ["50 perc", new RegExp(`50${ws}*perc`, "i")],
+  ["Erős Barbara", /Er[őöo]s\s+Barbara/i],
+  ["Barbara Erős", /Barbara\s+Er[őöo]s/i],
+];
+
+let pass = 0;
+let fail = 0;
+const report = (ok, name, hint = "") => {
+  if (ok) pass++; else fail++;
+  console.log(`${ok ? "PASS" : "FAIL"} ${name}${!ok && hint ? ` -- ${hint}` : ""}`);
+};
+const show = (s) => JSON.stringify(s.slice(0, 60));
+
+for (const [name, str] of required) {
+  const needle = norm(str);
+  report(built.includes(needle), `built contains: ${name}`, `missing ${show(needle)}`);
+}
+for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
+  for (const [name, re] of forbidden) {
+    const m = corpus.match(re);
+    report(!m, `${corpusName} lacks: ${name}`, m ? `found ${show(corpus.slice(Math.max(0, m.index - 10), m.index + 40))}` : "");
+  }
+}
+if (srcFiles.length === 0) report(false, "app source readable", `no .ts/.tsx under ${appDir}`);
+
+console.log(`verify-content: ${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

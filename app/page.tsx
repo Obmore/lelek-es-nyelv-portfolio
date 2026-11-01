@@ -1,62 +1,197 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import HeroSceneMount from './components/hero-scene/HeroSceneMount';
+import {
+  CONTACT_EMAIL,
+  FORM_AJAX_ENDPOINT,
+  FORM_ENDPOINT,
+  INSTAGRAM_URL,
+  PRIVACY_URL,
+  contactPromises,
+  faqs,
+  methodSteps,
+  services,
+  testimonials,
+  topics,
+  values,
+} from './content';
 
-const faqs = [
-  {
-    question: 'Honnan tudhatom, melyik folyamat való nekem?',
-    answer: 'Az első, díjmentes 20 perces beszélgetésen közösen ránézünk arra, miben vagy most, és mire lenne szükséged. Ha az angol és az önismeret egyszerre fontos, a két területet finoman össze is kapcsolhatjuk.',
-  },
-  {
-    question: 'Online vagy személyesen találkozunk?',
-    answer: 'Az alkalmak online zajlanak, így bárhonnan csatlakozhatsz egy nyugodt, zavartalan helyről. A személyes találkozás lehetőségéről az első beszélgetésen egyeztetünk.',
-  },
-  {
-    question: 'Mi történik, ha félek angolul megszólalni?',
-    answer: 'Pont ebből indulunk. Nem a hibátlan mondat a cél, hanem hogy biztonságban maradj akkor is, amikor keresed a szavakat. A nyelvtanulás tempóját hozzád, nem egy tankönyvhöz igazítom.',
-  },
-  {
-    question: 'Hány alkalommal érdemes számolnom?',
-    answer: 'Nincs kötelező csomag vagy előre eldöntött hossz. Az első néhány alkalom után együtt értékeljük, mi szolgál téged a legjobban, és ehhez igazítjuk a folytatást.',
-  },
-];
+const MAX_TILT = 6; // degrees
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [sceneActive, setSceneActive] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const mainRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
 
+  // Scroll reveal. Content stays visible unless IntersectionObserver is available.
   useEffect(() => {
-    const reveals = document.querySelectorAll<HTMLElement>('[data-reveal]');
+    const main = mainRef.current;
+    if (!main || typeof IntersectionObserver === 'undefined') return;
+    const reveals = main.querySelectorAll<HTMLElement>('[data-reveal]');
+    main.classList.add('reveal-ready');
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible')),
-      { threshold: 0.14 },
+      (entries) =>
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        }),
+      { threshold: 0, rootMargin: '0px 0px -6% 0px' },
     );
     reveals.forEach((element) => observer.observe(element));
-
-    const updateProgress = () => {
-      const available = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(available > 0 ? (window.scrollY / available) * 100 : 0);
-    };
-    updateProgress();
-    window.addEventListener('scroll', updateProgress, { passive: true });
-
     return () => {
       observer.disconnect();
-      window.removeEventListener('scroll', updateProgress);
+      main.classList.remove('reveal-ready');
     };
   }, []);
+
+  // Scroll progress: one rAF-throttled transform on a ref, no React state per scroll event.
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const bar = progressRef.current;
+      if (!bar) return;
+      const available = document.documentElement.scrollHeight - window.innerHeight;
+      const ratio = available > 0 ? Math.min(1, Math.max(0, window.scrollY / available)) : 0;
+      bar.style.transform = `scaleX(${ratio})`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  // Pointer tilt for .tilt elements: fine pointers only, never with reduced motion. Follows media changes.
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main || typeof window.matchMedia !== 'function') return;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let active: HTMLElement | null = null;
+    let frame = 0;
+    let lastEvent: PointerEvent | null = null;
+    let attached = false;
+
+    const reset = (element: HTMLElement | null) => {
+      if (!element) return;
+      element.style.setProperty('--rx', '0deg');
+      element.style.setProperty('--ry', '0deg');
+      element.style.setProperty('--gx', '50%');
+      element.style.setProperty('--gy', '50%');
+    };
+    const clear = () => {
+      lastEvent = null;
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      reset(active);
+      active = null;
+    };
+    const apply = () => {
+      frame = 0;
+      const event = lastEvent;
+      if (!event) return;
+      const target = (event.target as Element | null)?.closest<HTMLElement>('.tilt') ?? null;
+      if (target !== active) {
+        reset(active);
+        active = target;
+      }
+      if (!target) return;
+      // Measure the untransformed wrapper so the tilt/lift of the card itself never feeds back into the maths.
+      const rect = (target.parentElement ?? target).getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+      target.style.setProperty('--rx', `${((0.5 - y) * 2 * MAX_TILT).toFixed(2)}deg`);
+      target.style.setProperty('--ry', `${((x - 0.5) * 2 * MAX_TILT).toFixed(2)}deg`);
+      target.style.setProperty('--gx', `${(x * 100).toFixed(1)}%`);
+      target.style.setProperty('--gy', `${(y * 100).toFixed(1)}%`);
+    };
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return;
+      lastEvent = event;
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+    const attach = () => {
+      if (attached) return;
+      attached = true;
+      main.addEventListener('pointermove', onMove, { passive: true });
+      main.addEventListener('pointerleave', clear);
+      window.addEventListener('scroll', clear, { passive: true });
+    };
+    const detach = () => {
+      if (!attached) return;
+      attached = false;
+      main.removeEventListener('pointermove', onMove);
+      main.removeEventListener('pointerleave', clear);
+      window.removeEventListener('scroll', clear);
+      clear();
+    };
+    const sync = () => (fine.matches && !reduced.matches ? attach() : detach());
+    sync();
+    // Safari < 14 only has the legacy addListener/removeListener on MediaQueryList.
+    const listen = (list: MediaQueryList) =>
+      list.addEventListener ? list.addEventListener('change', sync) : list.addListener(sync);
+    const unlisten = (list: MediaQueryList) =>
+      list.removeEventListener ? list.removeEventListener('change', sync) : list.removeListener(sync);
+    listen(fine);
+    listen(reduced);
+    return () => {
+      unlisten(fine);
+      unlisten(reduced);
+      detach();
+    };
+  }, []);
+
+  // Mobile menu: Escape closes and returns focus to the toggle; an outside click closes.
+  useEffect(() => {
+    if (!menuOpen) return;
+    document.querySelector<HTMLElement>('#main-nav a')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     const form = event.currentTarget;
     setFormStatus('sending');
 
     try {
       const payload = Object.fromEntries(new FormData(form).entries());
-      const response = await fetch('https://formsubmit.co/ajax/benzdsiott1998@gmail.com', {
+      const response = await fetch(FORM_AJAX_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
@@ -71,14 +206,16 @@ export default function Home() {
       setFormStatus('sent');
     } catch {
       setFormStatus('error');
+    } finally {
+      sendingRef.current = false;
     }
   };
 
   return (
-    <main>
-      <div className="progress-bar" style={{ width: `${progress}%` }} aria-hidden="true" />
+    <main ref={mainRef}>
+      <div className="progress-bar" ref={progressRef} aria-hidden="true" />
 
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <a className="brand" href="#top" aria-label="Lélek és nyelv – főoldal" onClick={closeMenu}>
           <span className="brand-mark">A</span>
           <span>
@@ -87,7 +224,7 @@ export default function Home() {
           </span>
         </a>
 
-        <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Főmenü">
+        <nav id="main-nav" className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Főmenü">
           <a href="#rolam" onClick={closeMenu}>Rólam</a>
           <a href="#szolgaltatasok" onClick={closeMenu}>Amiben segítek</a>
           <a href="#modszertan" onClick={closeMenu}>Hogyan dolgozom</a>
@@ -98,10 +235,12 @@ export default function Home() {
           Ismerkedjünk meg <span aria-hidden="true">↗</span>
         </a>
         <button
+          ref={toggleRef}
           className="menu-button"
           type="button"
           aria-label={menuOpen ? 'Menü bezárása' : 'Menü megnyitása'}
           aria-expanded={menuOpen}
+          aria-controls="main-nav"
           onClick={() => setMenuOpen((open) => !open)}
         >
           <span /><span />
@@ -123,33 +262,36 @@ export default function Home() {
             <a className="button button-primary" href="#szolgaltatasok">
               Fedezd fel, hogyan segítek <span aria-hidden="true">→</span>
             </a>
-            <p><b>01</b> emberközpontú<br />szemlélet</p>
+            <p className="hero-fact"><b>60</b><span>perces alkalmak,<br />online is</span></p>
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Nyugodt, személyes fejlődést jelképező illusztráció">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <span className="floating-dot dot-one" />
-          <span className="floating-dot dot-two" />
-          <div className="sun-disc">
+        <div className={`hero-visual${sceneActive ? ' has-scene' : ''}`}>
+          <HeroSceneMount onActiveChange={setSceneActive} />
+          <div className="orbit orbit-one" aria-hidden="true" />
+          <div className="orbit orbit-two" aria-hidden="true" />
+          <span className="floating-dot dot-one" aria-hidden="true" />
+          <span className="floating-dot dot-two" aria-hidden="true" />
+          <div className="sun-disc" aria-hidden="true">
             <span className="sun-word">grow</span>
             <span className="sun-line" />
             <span className="sun-word sun-word-bottom">belülről</span>
           </div>
           <div className="quote-card">
-            <span className="quote-mark">“</span>
+            <span className="quote-mark" aria-hidden="true">„</span>
             <p>A fejlődés nem verseny. Inkább egyre őszintébb beszélgetés önmagaddal.</p>
             <span className="quote-sign">A.</span>
           </div>
-          <p className="visual-note">Jelenlét <span>•</span> Kapcsolódás <span>•</span> Nyelv</p>
+          <p className="visual-note" aria-hidden="true">Jelenlét <span>•</span> Kapcsolódás <span>•</span> Nyelv</p>
         </div>
       </section>
 
-      <div className="ticker" aria-hidden="true">
-        <div className="ticker-track">
-          <span>HELLO</span><i>✦</i><span>SZIA</span><i>✦</i><span>LET&apos;S TALK</span><i>✦</i><span>KAPCSOLÓDJUNK</span><i>✦</i>
-          <span>HELLO</span><i>✦</i><span>SZIA</span><i>✦</i><span>LET&apos;S TALK</span><i>✦</i><span>KAPCSOLÓDJUNK</span><i>✦</i>
+      <div className="ticker-wrap" aria-hidden="true">
+        <div className="ticker">
+          <div className="ticker-track">
+            <span>HELLO</span><i>✦</i><span>SZIA</span><i>✦</i><span>LET&apos;S TALK</span><i>✦</i><span>KAPCSOLÓDJUNK</span><i>✦</i>
+            <span>HELLO</span><i>✦</i><span>SZIA</span><i>✦</i><span>LET&apos;S TALK</span><i>✦</i><span>KAPCSOLÓDJUNK</span><i>✦</i>
+          </div>
         </div>
       </div>
 
@@ -170,7 +312,7 @@ export default function Home() {
                 <span className="portrait-initial">A</span>
                 <span className="portrait-caption">presence<br />before<br />performance</span>
               </div>
-              <span className="stamp">12+ év<br />emberekkel</span>
+              <span className="stamp">lélek<br />&amp; nyelv</span>
             </div>
             <div className="about-copy" data-reveal>
               <p className="lead-serif">
@@ -183,17 +325,19 @@ export default function Home() {
                 együtt keresem azt az utat, ami valóban a tiéd — legyen szó egy
                 nehéz élethelyzetről vagy az első magabiztos angol mondatodról.
               </p>
-              <a className="text-link" href="#modszertan">Ismerd meg a szemléletem <span>→</span></a>
+              <a className="text-link" href="#modszertan">Ismerd meg a szemléletem <span aria-hidden="true">→</span></a>
             </div>
           </div>
         </div>
       </section>
 
       <section className="values" aria-label="Értékeim">
-        <div data-reveal><b>01</b><span>Ítéletmentes<br />figyelem</span></div>
-        <div data-reveal><b>02</b><span>Személyre szabott<br />folyamat</span></div>
-        <div data-reveal><b>03</b><span>Gyakorlatias<br />eszközök</span></div>
-        <div data-reveal><b>04</b><span>Humor és<br />könnyedség</span></div>
+        {values.map((value) => (
+          <div key={value.number} data-reveal>
+            <b>{value.number}</b>
+            <span>{value.label[0]}<br />{value.label[1]}</span>
+          </div>
+        ))}
       </section>
 
       <section className="services section-shell" id="szolgaltatasok">
@@ -207,43 +351,34 @@ export default function Home() {
             <h2 data-reveal>Találd meg azt,<br /><em>amire most szükséged van.</em></h2>
           </div>
 
-          <article className="service-card service-mind" data-reveal>
-            <div className="service-topline"><span>01 / MENTÁLHIGIÉNÉ</span><span>50 PERC</span></div>
-            <div className="service-content">
-              <div>
-                <span className="service-symbol">↺</span>
-                <h3>Egyéni segítő<br />beszélgetés</h3>
+          <div className="service-stage">
+            {services.map((service) => (
+              <div className="service-slot" data-reveal key={service.id}>
+                <article className={`service-card tilt service-${service.slug}`}>
+                  <div className="service-topline">
+                    <span>{service.index} / {service.area}</span>
+                    <span>{service.duration}</span>
+                  </div>
+                  <div className="service-content">
+                    <div className="service-head">
+                      <span className="service-symbol" aria-hidden="true">{service.symbol}</span>
+                      <h3>{service.name}</h3>
+                      {service.scope && <p className="service-scope">{service.scope}</p>}
+                      {service.audience && <p className="service-audience">{service.audience}</p>}
+                    </div>
+                    <div className="service-details">
+                      <p>{service.description}</p>
+                      <ul>
+                        {service.chips.map((chip) => <li key={chip}>{chip}</li>)}
+                      </ul>
+                      <p className="service-price">{service.price}</p>
+                      <a href="#kapcsolat" className="round-link" aria-label={service.ariaLabel}>↗</a>
+                    </div>
+                  </div>
+                </article>
               </div>
-              <div className="service-details">
-                <p>Ha túl sok lett. Ha változnál. Ha szeretnéd végre meghallani a saját válaszaidat.</p>
-                <ul>
-                  <li>élethelyzeti elakadások</li>
-                  <li>önismeret és határok</li>
-                  <li>stressz és egyensúly</li>
-                </ul>
-                <a href="#kapcsolat" className="round-link" aria-label="Érdeklődöm az egyéni beszélgetésről">↗</a>
-              </div>
-            </div>
-          </article>
-
-          <article className="service-card service-language" data-reveal>
-            <div className="service-topline"><span>02 / ANGOL</span><span>50 PERC</span></div>
-            <div className="service-content">
-              <div>
-                <span className="service-symbol">Aa</span>
-                <h3>Angol, amiben<br />te is benne vagy</h3>
-              </div>
-              <div className="service-details">
-                <p>Beszédközpontú órák felnőtteknek — a görcsös teljesítés helyett valódi kapcsolódással.</p>
-                <ul>
-                  <li>beszédbátorság</li>
-                  <li>munkahelyi angol</li>
-                  <li>önazonos kommunikáció</li>
-                </ul>
-                <a href="#kapcsolat" className="round-link" aria-label="Érdeklődöm az angolórákról">↗</a>
-              </div>
-            </div>
-          </article>
+            ))}
+          </div>
 
           <p className="service-note" data-reveal>
             A mentálhigiénés segítő beszélgetés nem pszichoterápia, és nem helyettesít pszichológiai vagy egészségügyi ellátást.
@@ -263,37 +398,37 @@ export default function Home() {
             <p data-reveal>Elég, ha megérkezel. A többit lépésről lépésre közösen alakítjuk.</p>
           </div>
           <div className="steps">
-            <article data-reveal>
-              <span className="step-number">01</span>
-              <div><h3>Kapcsolódunk</h3><p>Egy rövid, díjmentes online beszélgetésen megismerjük egymást és a kérdésedet.</p></div>
-              <span className="step-word">hello</span>
-            </article>
-            <article data-reveal>
-              <span className="step-number">02</span>
-              <div><h3>Irányt találunk</h3><p>Közösen megfogalmazzuk, miben szeretnél változást, és mi segíthet ebben.</p></div>
-              <span className="step-word">notice</span>
-            </article>
-            <article data-reveal>
-              <span className="step-number">03</span>
-              <div><h3>Haladunk</h3><p>A saját tempódban gyakorlunk, reflektálunk, és időről időre ránézünk a megtett útra.</p></div>
-              <span className="step-word">grow</span>
-            </article>
+            {methodSteps.map((step) => (
+              <article data-reveal key={step.number}>
+                <span className="step-number">{step.number}</span>
+                <div><h3>{step.title}</h3><p>{step.text}</p></div>
+                <span className="step-word" aria-hidden="true">{step.word}</span>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="testimonial-section">
-        <div className="testimonial-copy" data-reveal>
-          <p className="section-kicker">Visszajelzés</p>
-          <blockquote>
-            “Anna óráin először mertem úgy angolul beszélni, hogy közben nem javítottam ki fejben minden szavamat. Furcsa módon ettől lettem sokkal pontosabb — és szabadabb.”
-          </blockquote>
-          <p className="testimonial-author"><b>Réka</b><span>üzleti angol, 8 hónap</span></p>
+      <section className="voices" id="visszajelzesek" aria-labelledby="voices-title">
+        <div className="voices-heading">
+          <p className="section-kicker" data-reveal>Visszajelzések</p>
+          <h2 id="voices-title" data-reveal>Mások <em>szavaival.</em></h2>
         </div>
-        <div className="testimonial-art" aria-hidden="true">
-          <span className="arch arch-one" /><span className="arch arch-two" /><span className="arch arch-three" />
-          <p>space<br /><em>to be</em></p>
-        </div>
+        <ul className="voices-stage" role="list">
+          {testimonials.map((item) => (
+            <li className="voice" key={item.id}>
+              <figure className="voice-card tilt">
+                <span className="voice-chip">{item.category}</span>
+                <blockquote className="voice-pull" aria-hidden="true">„{item.pull}”</blockquote>
+                <p className="voice-text">{item.text}</p>
+                <figcaption className="voice-author">
+                  <b>{item.author}</b>
+                  <span>{item.label}</span>
+                </figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="faq section-shell" id="gyik">
@@ -320,20 +455,19 @@ export default function Home() {
           <p className="section-kicker">Első lépés</p>
           <h2>Van kedved<br /><em>beszélgetni?</em></h2>
           <p>Mesélj röviden arról, mivel keresel, és add meg, hogyan érhetlek el. Az üzeneted rendezett formában, közvetlenül Anna postafiókjába érkezik.</p>
-          <div className="contact-promise">
-            <span>01</span><p><b>Díjmentes első beszélgetés</b><br />20 perc, online</p>
-          </div>
-          <div className="contact-promise">
-            <span>02</span><p><b>Válasz egy munkanapon belül</b><br />e-mailben vagy telefonon</p>
-          </div>
+          {contactPromises.map((promise) => (
+            <div className="contact-promise" key={promise.number}>
+              <span>{promise.number}</span><p><b>{promise.title}</b><br />{promise.subline}</p>
+            </div>
+          ))}
         </div>
 
         <form
           className="contact-form"
-          action="https://formsubmit.co/benzdsiott1998@gmail.com"
+          action={FORM_ENDPOINT}
           method="POST"
           onSubmit={handleSubmit}
-          onChange={() => formStatus !== 'idle' && setFormStatus('idle')}
+          onChange={() => setFormStatus((status) => (status === 'sent' || status === 'error' ? 'idle' : status))}
           data-reveal
         >
           <input type="hidden" name="_subject" value="Új megkeresés — Lélek & Nyelv" />
@@ -349,7 +483,7 @@ export default function Home() {
           <fieldset className="topic-fieldset">
             <legend>Mivel kapcsolatban keresel?</legend>
             <div className="topic-options">
-              {['Mentálhigiénés beszélgetés', 'Angolóra', 'Mindkettő', 'Egyéb'].map((topic) => (
+              {topics.map((topic) => (
                 <label key={topic}>
                   <input type="radio" name="Megkeresés témája" value={topic} required />
                   <span>{topic}</span>
@@ -408,12 +542,12 @@ export default function Home() {
           <span><strong>ANNA</strong><small>lélek &amp; nyelv</small></span>
         </a>
         <div className="footer-contact">
-          <a href="mailto:benzdsiott1998@gmail.com">benzdsiott1998@gmail.com</a>
-          <a href="#top">Instagram ↗</a>
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          {INSTAGRAM_URL && <a href={INSTAGRAM_URL} rel="noopener noreferrer" target="_blank">Instagram ↗</a>}
         </div>
         <div className="footer-small">
           <span>© {new Date().getFullYear()} Anna</span>
-          <a href="#top">Adatkezelés</a>
+          {PRIVACY_URL && <a href={PRIVACY_URL}>Adatkezelés</a>}
         </div>
       </footer>
     </main>
