@@ -136,7 +136,7 @@ const required = [
   ["about paragraph 3", A3],
   ["consent text, part before link", "Elolvastam az"],
   ["consent link text", "adatkezelési tájékoztatót"],
-  ["consent text, part after link", ", és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat – az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is – a kapcsolatfelvétel és a válaszadás céljából kezelje."],
+  ["consent text, part after link", ", és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat (az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is) a kapcsolatfelvétel és a válaszadás céljából kezelje."],
   ["privacy section id", "adatkezeles"],
   ["privacy heading", "Adatkezelési tájékoztató"],
 ];
@@ -154,6 +154,7 @@ const forbidden = [
   ["removed about sentence: Nem kész receptekkel", /Nem kész receptekkel érkezem/],
   ["old about wording: 1969-ben születtem, s mivel", /1969-ben születtem, s mivel/],
   ["old about wording: a SOTE mentálhigiénés képzését", /a SOTE mentálhigiénés képzését/],
+  ["old consent dash pair", /adataimat – az üzenetemben/],
   ["word Réka", /(?<![\p{L}])Réka(?![\p{L}])/iu],
   ["12+ év", new RegExp(`12\\+${ws}*év`, "i")],
   ["50 perc", new RegExp(`50${ws}*perc`, "i")],
