@@ -177,8 +177,14 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
     report(!m, `${corpusName} lacks: ${name}`, m ? `found ${show(corpus.slice(Math.max(0, m.index - 10), m.index + 40))}` : "");
   }
 }
-// No em dash in the app source (the built bundle is skipped: library code may contain one).
-report(!source.includes("—"), "app source lacks: em dash (—)", `found ${show(source.slice(Math.max(0, source.indexOf("—") - 20), source.indexOf("—") + 40))}`);
+// No em dash in the authored sources: app ts/tsx/css and the github-pages entry files
+// (the built bundle is skipped: library code may contain one).
+{
+  const dashDirs = [[appDir, [".ts", ".tsx", ".css"]], [join(root, "github-pages"), [".html", ".tsx"]]];
+  const dashFiles = dashDirs.flatMap(([dir, exts]) => (existsSync(dir) ? walk(dir, exts) : []));
+  const hit = dashFiles.map((f) => [f, decode(readFileSync(f, "utf8"))]).find(([, text]) => text.includes("—"));
+  report(!hit, "app source lacks: em dash (—)", hit ? `found in ${hit[0]}: ${show(hit[1].slice(Math.max(0, hit[1].indexOf("—") - 20), hit[1].indexOf("—") + 40))}` : "");
+}
 // "díjmentes" only inside the three v2 strings (case-insensitive; longest first so nesting cannot leak).
 {
   const masks = FREE_STRINGS.map((x) => norm(x).toLowerCase()).sort((p, q) => q.length - p.length);
