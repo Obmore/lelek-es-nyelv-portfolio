@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE_URL } from "../site.config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = join(root, "dist-github-pages");
@@ -216,7 +217,7 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
 
 // Share metadata: canonical, Open Graph and Twitter card in both built pages
 {
-  const SITE = "https://obmore.github.io/lelek-es-nyelv-portfolio/";
+  const SITE = SITE_URL;
   const pages = [
     ["index.html", join(distDir, "index.html"), SITE],
     ["adatkezeles/index.html", join(distDir, "adatkezeles", "index.html"), `${SITE}adatkezeles/`],
@@ -235,7 +236,10 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
     const ogUrl = metaContent(html, "property", "og:url");
     report(ogUrl === url, `${label} og:url is ${url}`, `got ${JSON.stringify(ogUrl)}`);
     const ogImage = metaContent(html, "property", "og:image");
-    report(/^https:\/\/.+\/og-image\.png$/.test(ogImage ?? ""), `${label} og:image is an absolute og-image.png URL`, `got ${JSON.stringify(ogImage)}`);
+    report(ogImage === `${SITE}og-image.png`, `${label} og:image is ${SITE}og-image.png`, `got ${JSON.stringify(ogImage)}`);
+    report(metaContent(html, "property", "og:image:type") === "image/png", `${label} og:image:type is image/png`);
+    report(!!metaContent(html, "property", "og:image:alt"), `${label} og:image:alt is non-empty`);
+    report(!!metaContent(html, "property", "og:site_name"), `${label} og:site_name is non-empty`);
     report(metaContent(html, "property", "og:image:width") === "1200", `${label} og:image:width is 1200`);
     report(metaContent(html, "property", "og:image:height") === "630", `${label} og:image:height is 630`);
     report(metaContent(html, "name", "twitter:card") === "summary_large_image", `${label} twitter:card is summary_large_image`, `got ${JSON.stringify(metaContent(html, "name", "twitter:card"))}`);

@@ -1,7 +1,7 @@
 // Regenerates public/og-image.png (1200x630) from an inline HTML template.
 // Not part of `npm run check` or CI. Usage: node scripts/make-og-image.mjs
-// Needs playwright-core and Microsoft Edge: set PLAYWRIGHT_CORE to the
-// playwright-core directory, or rely on the global @playwright/cli install.
+// Needs playwright-core (importable, or its directory in PLAYWRIGHT_CORE) and
+// Microsoft Edge.
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -9,10 +9,18 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const coreDir =
-  process.env.PLAYWRIGHT_CORE ||
-  'C:/Users/bendz/AppData/Roaming/npm/node_modules/@playwright/cli/node_modules/playwright-core';
-const { chromium } = createRequire(join(coreDir, 'package.json'))('./index.js');
+async function loadChromium() {
+  try {
+    return (await import('playwright-core')).chromium;
+  } catch {
+    // fall through to PLAYWRIGHT_CORE
+  }
+  const dir = process.env.PLAYWRIGHT_CORE;
+  if (dir) return createRequire(join(dir, 'package.json'))('./index.js').chromium;
+  console.error('make-og-image: playwright-core not found. Install it globally (npm i -g playwright-core) or set PLAYWRIGHT_CORE to its directory.');
+  process.exit(2);
+}
+const chromium = await loadChromium();
 
 const font = (pkg, file) =>
   pathToFileURL(join(root, 'node_modules/@fontsource-variable', pkg, 'files', file)).href;

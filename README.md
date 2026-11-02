@@ -38,13 +38,13 @@ The Open Graph image is `public/og-image.png` (1200x630). Regenerate it after ch
 node scripts/make-og-image.mjs
 ```
 
-The script renders an HTML template with the bundled fonts in Microsoft Edge through `playwright-core` (set `PLAYWRIGHT_CORE` to its directory if it is not at the default global path). It is not part of `npm run check` or CI. After deploying, re-scrape the URL in the Facebook Sharing Debugger to refresh cached previews.
+The script renders an HTML template with the bundled fonts in Microsoft Edge through `playwright-core`. Install it globally or set `PLAYWRIGHT_CORE` to its directory; the script exits with code 2 if it cannot find it. It is not part of `npm run check` or CI. After deploying, re-scrape the URL in the Facebook Sharing Debugger to refresh cached previews.
 
 ## Custom domain
 
-1. In `vite.config.ts`, set `SITE_URL` to the new origin (with trailing slash) and `base` to `'/'`. They must change together.
-2. Add the domain in the repository's Pages settings (this creates the CNAME file the deployment needs) and set the DNS records at the registrar.
-3. Update the favicon links in `github-pages/index.html` and `github-pages/adatkezeles/index.html`; they hard-code the old base path.
+1. Change `SITE_URL` in `site.config.mjs` (absolute URL with trailing slash). The Vite `base`, the canonical and Open Graph tags, the favicon links and the verify-content expectations all follow it.
+2. Set the custom domain in the repository's Settings > Pages and enforce HTTPS. The deployment uses GitHub Actions (upload-pages-artifact and deploy-pages), so no CNAME file is needed.
+3. Add the DNS records at the registrar.
 4. Rebuild and redeploy.
 
 ## Dependencies

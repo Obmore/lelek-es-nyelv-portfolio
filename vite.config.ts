@@ -3,12 +3,9 @@ import tailwindcss from '@tailwindcss/postcss';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
+import { BASE_PATH, SITE_URL } from './site.config.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-
-// Absolute public URL of the site, with a trailing slash. `base` below and
-// SITE_URL must change together when moving to a custom domain.
-const SITE_URL = 'https://obmore.github.io/lelek-es-nyelv-portfolio/';
 
 const siteUrlPlugin: Plugin = {
   name: 'site-url',
@@ -17,8 +14,7 @@ const siteUrlPlugin: Plugin = {
 
 export default defineConfig({
   root: 'github-pages',
-  // Keep in sync with SITE_URL (custom domain: base becomes '/').
-  base: '/lelek-es-nyelv-portfolio/',
+  base: BASE_PATH,
   publicDir: '../public',
   css: { postcss: { plugins: [tailwindcss()] } },
   plugins: [react(), siteUrlPlugin],
