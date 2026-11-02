@@ -147,10 +147,10 @@ const text = (fragment) => decode(fragment.replace(/<!--[\s\S]*?-->/g, "").repla
 const norm = (s) => s.replace(/\s+/g, " ").trim();
 /** Whitespace-separated lowercase tokens of an attribute value, for whole-token comparison. */
 const tokens = (value) => (value ?? "").toLowerCase().split(/\s+/).filter(Boolean);
-/** True when href is an absolute URL on host or one of its subdomains (case-insensitive via URL parsing). */
+/** True when href points at host or one of its subdomains (case-insensitive via URL parsing, one trailing dot ignored); relative and protocol-relative hrefs are resolved against a dummy base. */
 const onHost = (href, host) => {
   try {
-    const h = new URL(href).hostname;
+    const h = new URL(href, "https://base.invalid/").hostname.replace(/\.$/, "");
     return h === host || h.endsWith(`.${host}`);
   } catch {
     return false;
