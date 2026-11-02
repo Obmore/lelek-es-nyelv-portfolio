@@ -17,7 +17,7 @@ const NB = " ";
 const EMAIL = (process.env.EXPECTED_CONTACT_EMAIL ?? "").trim() || "juhasznagyanna@gmail.com";
 
 if (process.argv.includes("--build")) {
-  const r = spawnSync("npm run build:github", { cwd: root, shell: true, stdio: "inherit" });
+  const r = spawnSync("npm run build", { cwd: root, shell: true, stdio: "inherit" });
   if (r.status !== 0) {
     console.error(`verify-content: build failed (exit ${r.status ?? "signal"})`);
     process.exit(2);

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Server-renders app/page.tsx and app/adatkezeles/page.tsx and asserts on the produced HTML, element by element.
+// Server-renders app/page.tsx and app/components/PrivacyPage.tsx and asserts on the produced HTML, element by element.
 // Expected values are imported from app/content.ts (bundled with the page), never hard-coded here.
 // Usage: node scripts/verify-render.mjs
 // Exit: 0 all pass, 1 any check failed, 2 environment problem (bundling or rendering failed).
@@ -46,14 +46,14 @@ try {
     await build({
       ...esbuildOptions(privacyFile),
       stdin: {
-        contents: "export { default as Privacy } from './app/adatkezeles/page.tsx';\n",
+        contents: "export { default as Privacy } from './app/components/PrivacyPage.tsx';\n",
         resolveDir: root,
         sourcefile: "verify-render-privacy-entry.ts",
         loader: "ts",
       },
     });
   } catch (error) {
-    privacyError = `bundling app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+    privacyError = `bundling app/components/PrivacyPage.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
   }
   // The form status texts are bundled on their own too: a missing component is a failed check, not an environment error.
   try {
@@ -88,7 +88,7 @@ try {
       const privacyMod = await import(`${pathToFileURL(privacyFile).href}?t=${Date.now()}`);
       privacyHtml = renderToString(createElement(privacyMod.Privacy));
     } catch (error) {
-      privacyError = `rendering app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+      privacyError = `rendering app/components/PrivacyPage.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
     }
   }
   if (!statusError) {
@@ -332,8 +332,8 @@ check(c.PRIVACY_URL === "adatkezeles/", "PRIVACY_URL equals adatkezeles/", JSON.
 check(!/\sid="adatkezeles"/.test(html), "home page has no element with id=\"adatkezeles\"");
 check(!/Adatkezelési tájékoztató(?![\p{L}])|Impresszum/u.test(text(html)), "home page has no privacy notice heading or imprint text");
 
-/* ---- privacy page (app/adatkezeles/page.tsx) ---- */
-check(privacyHtml !== null, "privacy page app/adatkezeles/page.tsx renders", privacyError);
+/* ---- privacy page (app/components/PrivacyPage.tsx) ---- */
+check(privacyHtml !== null, "privacy page app/components/PrivacyPage.tsx renders", privacyError);
 if (privacyHtml !== null) {
   const t = text(privacyHtml);
   const h1s = [...privacyHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map((m) => text(m[1]));
