@@ -150,8 +150,6 @@ const forbidden = [
   ["removed about sentence: Nem kész receptekkel", /Nem kész receptekkel érkezem/],
   ["old about wording: 1969-ben születtem, s mivel", /1969-ben születtem, s mivel/],
   ["old about wording: a SOTE mentálhigiénés képzését", /a SOTE mentálhigiénés képzését/],
-  ["old about wording: 1969-ben születtem, s mivel", /1969-ben születtem, s mivel/],
-  ["old about wording: a SOTE mentálhigiénés képzését", /a SOTE mentálhigiénés képzését/],
   ["word Réka", /(?<![\p{L}])Réka(?![\p{L}])/iu],
   ["12+ év", new RegExp(`12\\+${ws}*év`, "i")],
   ["50 perc", new RegExp(`50${ws}*perc`, "i")],

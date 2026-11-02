@@ -2,7 +2,7 @@ import { CONTACT_EMAIL } from '../content';
 
 export type FormStatus = 'idle' | 'sending' | 'sent' | 'error' | 'uncertain';
 
-/** Text of the contact form's status line; idle and sending show nothing. Kept apart from the page so each status can be rendered on its own. */
+/** Status line of the contact form; idle and sending show nothing. */
 export function FormStatusText({ status }: { status: FormStatus }) {
   if (status === 'sent') return <>Köszönöm! Az üzeneted úton van Annához.</>;
   if (status === 'error') {
