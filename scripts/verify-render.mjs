@@ -147,6 +147,15 @@ const text = (fragment) => decode(fragment.replace(/<!--[\s\S]*?-->/g, "").repla
 const norm = (s) => s.replace(/\s+/g, " ").trim();
 /** Whitespace-separated lowercase tokens of an attribute value, for whole-token comparison. */
 const tokens = (value) => (value ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+/** True when href is an absolute URL on host or one of its subdomains (case-insensitive via URL parsing). */
+const onHost = (href, host) => {
+  try {
+    const h = new URL(href).hostname;
+    return h === host || h.endsWith(`.${host}`);
+  } catch {
+    return false;
+  }
+};
 
 /** Every element whose opening tag matches `openRe`; returns {open, inner} with balanced same-name nesting. */
 function elements(source, tag, openRe) {
@@ -309,7 +318,7 @@ const SOCIALS = [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL
 for (const [constant, label, host] of SOCIALS) {
   check(constant in c, `${constant} is exported by content.ts`);
   if (c[constant] == null) {
-    check(!allHrefs.some((h) => h && h.includes(host)), `no ${host} link while ${constant} is null`);
+    check(!allHrefs.some((h) => onHost(h, host)), `no ${host} link while ${constant} is null`);
     check(!visible.includes(label), `no "${label}" text while ${constant} is null`);
   } else {
     check(allHrefs.includes(c[constant]), `${label} link renders when ${constant} is set`);
@@ -332,7 +341,7 @@ function checkSocialLinks(where, footerHtml) {
   const links = anchorsIn(footerHtml);
   for (const [constant, label, host] of SOCIALS) {
     if (c[constant] == null) {
-      check(!links.some((l) => l.href && l.href.includes(host)), `${where} footer has no ${label} link while ${constant} is null`, JSON.stringify(links.map((l) => l.href)));
+      check(!links.some((l) => onHost(l.href, host)), `${where} footer has no ${label} link while ${constant} is null`, JSON.stringify(links.map((l) => l.href)));
       continue;
     }
     const matches = links.filter((l) => l.href === c[constant]);
