@@ -11,6 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "node_modules", ".cache", "verify-render");
 const outFile = join(outDir, "bundle.mjs");
 const privacyFile = join(outDir, "privacy.mjs");
+const statusFile = join(outDir, "status.mjs");
 
 const esbuildOptions = (outfile) => ({
   outfile,
@@ -26,6 +27,7 @@ const esbuildOptions = (outfile) => ({
 
 let mod;
 let privacyError = "";
+let statusError = "";
 try {
   const { build } = await import("esbuild");
   mkdirSync(outDir, { recursive: true });
@@ -53,6 +55,20 @@ try {
   } catch (error) {
     privacyError = `bundling app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
   }
+  // The form status texts are bundled on their own too: a missing component is a failed check, not an environment error.
+  try {
+    await build({
+      ...esbuildOptions(statusFile),
+      stdin: {
+        contents: "export { FormStatusText } from './app/components/FormStatus.tsx';\n",
+        resolveDir: root,
+        sourcefile: "verify-render-status-entry.ts",
+        loader: "ts",
+      },
+    });
+  } catch (error) {
+    statusError = `bundling app/components/FormStatus.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+  }
 } catch (error) {
   console.error(`verify-render: bundling failed: ${error instanceof Error ? error.message : error}`);
   process.exit(2);
@@ -60,6 +76,7 @@ try {
 
 let html;
 let privacyHtml = null;
+const statusHtml = {};
 let bundleText = "";
 try {
   const { createElement } = await import("react");
@@ -72,6 +89,16 @@ try {
       privacyHtml = renderToString(createElement(privacyMod.Privacy));
     } catch (error) {
       privacyError = `rendering app/adatkezeles/page.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+    }
+  }
+  if (!statusError) {
+    try {
+      const { FormStatusText } = await import(`${pathToFileURL(statusFile).href}?t=${Date.now()}`);
+      for (const status of ["error", "uncertain", "sent", "idle", "sending"]) {
+        statusHtml[status] = renderToString(createElement(FormStatusText, { status }));
+      }
+    } catch (error) {
+      statusError = `rendering app/components/FormStatus.tsx failed: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
     }
   }
 } catch (error) {
@@ -98,9 +125,9 @@ const INPERSON_Q = "Online vagy személyesen találkozunk?";
 const INPERSON_A = "A segítő beszélgetéseket személyesen, Budapesten a XI. kerületben, és online is tartom. Az angolórák online is elérhetők, így bárhonnan csatlakozhatsz; a részleteket az ismerkedő beszélgetésen egyeztetjük.";
 const HERO_FACT = "60 perces alkalmak, személyesen és online";
 const ABOUT = [
-  "1969-ben születtem, s mivel szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.",
+  "1969-ben születtem. A szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.",
   "Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.",
-  "Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a SOTE mentálhigiénés képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.",
+  "Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a Semmelweis Egyetem Mentálhigiéné Intézetének posztgraduális képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.",
 ];
 const REMOVED = [
   "Anna vagyok, mentálhigiénés segítő szakember és angoltanár",
@@ -396,6 +423,28 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
   const ids = new Set([...html.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]));
   const dangling = hrefs.filter((h) => h && h.length > 1 && h.startsWith("#") && !ids.has(h.slice(1)));
   check(dangling.length === 0, "home page: every href=\"#id\" has a matching id", JSON.stringify(dangling));
+}
+
+/* ---- form status texts (app/components/FormStatus.tsx) ---- */
+{
+  const ERROR_TEXT = `Most nem sikerült elküldeni. Kérlek, próbáld újra később, vagy írj közvetlenül e-mailben: ${EMAIL}`;
+  const UNCERTAIN_TEXT = `A visszaigazolás nem érkezett meg időben, de az üzeneted lehet, hogy mégis célba ért. Kérlek, ne küldd el azonnal újra, inkább írj közvetlenül e-mailben: ${EMAIL}`;
+  const SENT_TEXT = "Köszönöm! Az üzeneted úton van Annához.";
+  check(!statusError, "form status component app/components/FormStatus.tsx renders", statusError);
+  if (!statusError) {
+    const mailLinks = (status) => anchorsIn(statusHtml[status]).filter((a) => (a.href ?? "").startsWith("mailto:"));
+    check(text(statusHtml.error) === norm(ERROR_TEXT), "form status error text equals the new copy with the e-mail address", text(statusHtml.error));
+    const errLinks = mailLinks("error");
+    check(errLinks.length === 1 && errLinks[0].href === `mailto:${EMAIL}` && errLinks[0].label === EMAIL, "form status error has exactly one mailto link to the expected e-mail, labelled with it", JSON.stringify(errLinks.map((a) => [a.href, a.label])));
+    check(anchorsIn(statusHtml.error).length === 1, "form status error has no other links");
+    check(text(statusHtml.uncertain) === norm(UNCERTAIN_TEXT), "form status uncertain text is unchanged", text(statusHtml.uncertain));
+    const uncLinks = mailLinks("uncertain");
+    check(uncLinks.length === 1 && uncLinks[0].href === `mailto:${EMAIL}` && uncLinks[0].label === EMAIL, "form status uncertain keeps its mailto link", JSON.stringify(uncLinks.map((a) => [a.href, a.label])));
+    check(text(statusHtml.sent) === SENT_TEXT && anchorsIn(statusHtml.sent).length === 0, "form status sent text is unchanged and has no link", text(statusHtml.sent));
+    check(statusHtml.idle === "" && statusHtml.sending === "", "form status idle and sending render nothing", JSON.stringify([statusHtml.idle, statusHtml.sending]));
+  }
+  const statusP = elements(html, "p", /class="[^"]*\bform-status\b/)[0];
+  check(Boolean(statusP) && attr(statusP.open, "role") === "status" && attr(statusP.open, "aria-live") === "polite", "home page renders the form status paragraph with role=\"status\" and aria-live=\"polite\"", statusP?.open);
 }
 
 /* ---- contact form ---- */

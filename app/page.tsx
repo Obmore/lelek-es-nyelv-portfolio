@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormStatus, FormStatusText } from './components/FormStatus';
 import SiteFooter from './components/SiteFooter';
 import HeroSceneMount from './components/hero-scene/HeroSceneMount';
 import { subscribeMedia } from './lib/media';
@@ -9,7 +10,6 @@ import {
   CONSENT_AFTER,
   CONSENT_BEFORE,
   CONSENT_LINK,
-  CONTACT_EMAIL,
   FORM_AJAX_ENDPOINT,
   FORM_ENDPOINT,
   PRIVACY_URL,
@@ -31,7 +31,7 @@ const PHONE_REPLY = 'Telefonon';
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
-  const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'uncertain'>('idle');
+  const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const mainRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -568,14 +568,7 @@ export default function Home() {
                 {formStatus === 'sending' ? 'Küldés folyamatban…' : 'Üzenet elküldése'} <span aria-hidden="true">↗</span>
               </button>
               <p className={`form-status ${formStatus}`} role="status" aria-live="polite">
-                {formStatus === 'sent' && 'Köszönöm! Az üzeneted úton van Annához.'}
-                {formStatus === 'error' && 'Most nem sikerült elküldeni. Kérlek, próbáld újra.'}
-              {formStatus === 'uncertain' && (
-                <>
-                  A visszaigazolás nem érkezett meg időben, de az üzeneted lehet, hogy mégis célba ért. Kérlek, ne küldd el
-                  azonnal újra, inkább írj közvetlenül e-mailben: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-                </>
-              )}
+                <FormStatusText status={formStatus} />
               </p>
             </div>
           </form>
