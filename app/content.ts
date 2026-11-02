@@ -94,7 +94,7 @@ export const services: Service[] = [
     name: 'Angol oktatás',
     scope: 'Felkészítés nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgákra (például Origó, Euroexam, BME, telc)',
     level: 'Alap-, közép- és felsőfokon',
-    description: 'Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is — a görcsös teljesítés helyett valódi kapcsolódással.',
+    description: 'Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is. Nem a görcsös teljesítés a cél, hanem a valódi kapcsolódás.',
     chips: ['beszédbátorság', 'munkahelyi angol', 'önazonos kommunikáció', 'nyelvvizsga-felkészítés'],
     price: PRICE_ENGLISH,
     ariaLabel: 'Érdeklődöm az angolórákról',

@@ -291,7 +291,7 @@ export default function Home() {
               <em>Bátrabb hang.</em>
             </h1>
             <p className="hero-lead reveal-third">
-              Segítek közelebb kerülni önmagadhoz — és magabiztosabban
+              Segítek közelebb kerülni önmagadhoz, és magabiztosabban
               megszólalni angolul. Figyelemmel, kíváncsisággal, a saját ritmusodban.
             </p>
             <div className="hero-actions reveal-third">
@@ -498,7 +498,7 @@ export default function Home() {
             onChange={() => setFormStatus((status) => (status === 'sent' || status === 'error' ? 'idle' : status))}
             data-reveal
           >
-            <input type="hidden" name="_subject" value="Új megkeresés — Lélek & Nyelv" />
+            <input type="hidden" name="_subject" value="Új megkeresés a Lélek & Nyelv oldalról" />
             <input type="hidden" name="_template" value="table" />
             <input type="hidden" name="_captcha" value="false" />
             <input type="text" name="_honey" className="honey-field" tabIndex={-1} autoComplete="off" aria-hidden="true" />
