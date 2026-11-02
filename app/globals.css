@@ -416,7 +416,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .contact-form .button-light:disabled { cursor: wait; opacity: .7; transform: none; }
 .form-status { flex: 1; margin: 0; font-size: 14px; line-height: 1.5; }
 .form-status.sent { color: var(--sage-dark); font-weight: 600; }
-.form-status.error { color: #a02f22; font-weight: 600; }
+.form-status.error { flex-basis: 100%; color: #a02f22; font-weight: 600; }
 .form-status.uncertain { flex-basis: 100%; font-weight: 600; }
 .form-status a { text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .honey-field { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; opacity: 0; }
