@@ -27,8 +27,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Build site
-        run: npm run build:github
+      - name: Lint, typecheck, build and verify
+        run: npm run check
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
