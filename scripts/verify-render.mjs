@@ -303,13 +303,21 @@ for (const item of c.testimonials) {
 /* ---- optional links ---- */
 const visible = text(html);
 const allHrefs = [...html.matchAll(/<a\b[^>]*>/g)].map((m) => attr(m[0], "href"));
-for (const [constant, label, host] of [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL", "Facebook", "facebook.com"]]) {
+const SOCIALS = [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL", "Facebook", "facebook.com"]];
+for (const [constant, label, host] of SOCIALS) {
   check(constant in c, `${constant} is exported by content.ts`);
   if (c[constant] == null) {
     check(!allHrefs.some((h) => h && h.includes(host)), `no ${host} link while ${constant} is null`);
     check(!visible.includes(label), `no "${label}" text while ${constant} is null`);
   } else {
     check(allHrefs.includes(c[constant]), `${label} link renders when ${constant} is set`);
+    let url = null;
+    try {
+      url = new URL(c[constant]);
+    } catch {
+      // reported by the check below
+    }
+    check(url !== null && url.protocol === "https:" && (url.hostname === host || url.hostname.endsWith(`.${host}`)), `${constant} is an https URL on ${host}`, JSON.stringify(c[constant]));
   }
 }
 const anchorsIn = (fragment) =>
@@ -317,6 +325,21 @@ const anchorsIn = (fragment) =>
     const open = m[0].match(/<a\b[^>]*>/)[0];
     return { open, href: attr(open, "href"), label: text(m[1]), inner: m[1] };
   });
+/** When a social URL is set, the footer holds exactly one matching anchor: "<Label> ↗", new tab, noopener noreferrer. */
+function checkSocialLinks(where, footerHtml) {
+  const links = anchorsIn(footerHtml);
+  for (const [constant, label] of SOCIALS) {
+    if (c[constant] == null) continue;
+    const matches = links.filter((l) => l.href === c[constant]);
+    check(matches.length === 1, `${where} footer has exactly one ${label} link`, `${matches.length} anchors with href ${JSON.stringify(c[constant])}`);
+    const link = matches[0];
+    if (!link) continue;
+    const rel = attr(link.open, "rel") ?? "";
+    check(link.label === `${label} ↗`, `${where} footer ${label} link label is "${label} ↗"`, JSON.stringify(link.label));
+    check(attr(link.open, "target") === "_blank", `${where} footer ${label} link opens in a new tab`, link.open);
+    check(/\bnoopener\b/i.test(rel) && /\bnoreferrer\b/i.test(rel), `${where} footer ${label} link has rel noopener noreferrer`, JSON.stringify(rel));
+  }
+}
 {
   const footer = elements(html, "footer", /^<footer/)[0];
   check(Boolean(footer), "footer rendered");
@@ -324,6 +347,7 @@ const anchorsIn = (fragment) =>
     const links = anchorsIn(footer.inner);
     check(links.some((l) => l.label === "Adatkezelés" && l.href === "adatkezeles/"), "footer has an Adatkezelés link to adatkezeles/", JSON.stringify(links));
     check(has(text(footer.inner), "Juhász Nagy Anna"), "footer contains Juhász Nagy Anna");
+    checkSocialLinks("home", footer.inner);
   }
 }
 
@@ -351,6 +375,9 @@ if (privacyHtml !== null) {
   const PHONE_ITEM = "a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),";
   const items = elements(privacyHtml, "li", /^<li/).map((el) => text(el.inner));
   check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
+  const privFooter = elements(privacyHtml, "footer", /^<footer/)[0];
+  check(Boolean(privFooter), "privacy page footer rendered");
+  if (privFooter) checkSocialLinks("privacy page", privFooter.inner);
   const privAnchors = anchorsIn(privacyHtml);
   const privLinks = privAnchors.map((a) => a.open);
   check(privAnchors.some((a) => a.href === "../"), "privacy page links back to the home page with href=\"../\"");

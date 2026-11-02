@@ -127,6 +127,7 @@ const required = [
   ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is. Nem a görcsös teljesítés a cél, hanem a valódi kapcsolódás."],
   ["hero lead sentence", "Segítek közelebb kerülni önmagadhoz, és magabiztosabban megszólalni angolul."],
   ["form subject", "Új megkeresés a Lélek & Nyelv oldalról"],
+  ["Facebook URL", "https://www.facebook.com/anna.juhasznagy"],
   ["chip nyelvvizsga-felkészítés", "nyelvvizsga-felkészítés"],
   ["full name", "Juhász Nagy Anna"],
   ["about stamp", "ELTE · SOTE"],

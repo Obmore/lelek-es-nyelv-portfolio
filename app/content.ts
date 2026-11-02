@@ -9,7 +9,7 @@ export const FORM_AJAX_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
 
 /** Optional links: the link renders only when the URL is set. */
 export const INSTAGRAM_URL: string | null = null;
-export const FACEBOOK_URL: string | null = null;
+export const FACEBOOK_URL: string | null = 'https://www.facebook.com/anna.juhasznagy';
 export const PRIVACY_URL: string | null = 'adatkezeles/';
 
 /** Single source of truth for prices (used by the cards and by the FAQ). */
