@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE_URL } from "../site.config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = join(root, "dist-github-pages");
@@ -212,6 +213,46 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
   const html = exists ? decode(readFileSync(privPath, "utf8")) : "";
   const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim();
   report(title === "Adatkezelési tájékoztató – Juhász Nagy Anna", "adatkezeles/index.html <title> equals the privacy page title", `got ${JSON.stringify(title)}`);
+}
+
+// Share metadata: canonical, Open Graph and Twitter card in both built pages
+{
+  const SITE = SITE_URL;
+  const pages = [
+    ["index.html", join(distDir, "index.html"), SITE],
+    ["adatkezeles/index.html", join(distDir, "adatkezeles", "index.html"), `${SITE}adatkezeles/`],
+  ];
+  const metaContent = (html, attr, key) => {
+    for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+      const tag = m[0];
+      if (new RegExp(`${attr}="${key}"`, "i").test(tag)) return tag.match(/content="([^"]*)"/i)?.[1];
+    }
+    return undefined;
+  };
+  for (const [label, path, url] of pages) {
+    const html = existsSync(path) ? decode(readFileSync(path, "utf8")) : "";
+    const canonical = html.match(/<link\b[^>]*rel="canonical"[^>]*>/i)?.[0]?.match(/href="([^"]*)"/i)?.[1];
+    report(canonical === url, `${label} canonical is ${url}`, `got ${JSON.stringify(canonical)}`);
+    const ogUrl = metaContent(html, "property", "og:url");
+    report(ogUrl === url, `${label} og:url is ${url}`, `got ${JSON.stringify(ogUrl)}`);
+    const ogImage = metaContent(html, "property", "og:image");
+    report(ogImage === `${SITE}og-image.png`, `${label} og:image is ${SITE}og-image.png`, `got ${JSON.stringify(ogImage)}`);
+    report(metaContent(html, "property", "og:image:type") === "image/png", `${label} og:image:type is image/png`);
+    report(!!metaContent(html, "property", "og:image:alt"), `${label} og:image:alt is non-empty`);
+    report(!!metaContent(html, "property", "og:site_name"), `${label} og:site_name is non-empty`);
+    report(metaContent(html, "property", "og:image:width") === "1200", `${label} og:image:width is 1200`);
+    report(metaContent(html, "property", "og:image:height") === "630", `${label} og:image:height is 630`);
+    report(metaContent(html, "name", "twitter:card") === "summary_large_image", `${label} twitter:card is summary_large_image`, `got ${JSON.stringify(metaContent(html, "name", "twitter:card"))}`);
+    report(!html.includes("%SITE_URL%"), `${label} has no unreplaced %SITE_URL% token`);
+  }
+  const imgPath = join(distDir, "og-image.png");
+  let dims = "missing";
+  if (existsSync(imgPath)) {
+    const b = readFileSync(imgPath);
+    const isPng = b.length >= 24 && b.subarray(1, 4).toString("latin1") === "PNG";
+    dims = isPng ? `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}` : "not a PNG";
+  }
+  report(dims === "1200x630", "dist-github-pages/og-image.png is a 1200x630 PNG", `got ${dims}`);
 }
 
 // E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
