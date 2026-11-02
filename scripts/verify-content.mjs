@@ -123,7 +123,9 @@ const required = [
   ["hero fact (v2)", "perces alkalmak, személyesen és online"],
   ["FAQ exam question (v2)", "Milyen nyelvvizsgára készítesz fel?"],
   ["FAQ exam answer (v2)", "Minden nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgára (például Origó, Euroexam, BME, telc) vállalok felkészítést, alap-, közép- és felsőfokon."],
-  ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is — a görcsös teljesítés helyett valódi kapcsolódással."],
+  ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is. Nem a görcsös teljesítés a cél, hanem a valódi kapcsolódás."],
+  ["hero lead sentence", "Segítek közelebb kerülni önmagadhoz, és magabiztosabban megszólalni angolul."],
+  ["form subject", "Új megkeresés a Lélek & Nyelv oldalról"],
   ["chip nyelvvizsga-felkészítés", "nyelvvizsga-felkészítés"],
   ["full name", "Juhász Nagy Anna"],
   ["about stamp", "ELTE · SOTE"],
@@ -174,6 +176,14 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
     const m = corpus.match(re);
     report(!m, `${corpusName} lacks: ${name}`, m ? `found ${show(corpus.slice(Math.max(0, m.index - 10), m.index + 40))}` : "");
   }
+}
+// No em dash in the authored sources: app ts/tsx/css and the github-pages entry files
+// (the built bundle is skipped: library code may contain one).
+{
+  const dashDirs = [[appDir, [".ts", ".tsx", ".css"]], [join(root, "github-pages"), [".html", ".tsx"]]];
+  const dashFiles = dashDirs.flatMap(([dir, exts]) => (existsSync(dir) ? walk(dir, exts) : []));
+  const hit = dashFiles.map((f) => [f, decode(readFileSync(f, "utf8"))]).find(([, text]) => text.includes("—"));
+  report(!hit, "app source lacks: em dash (—)", hit ? `found in ${hit[0]}: ${show(hit[1].slice(Math.max(0, hit[1].indexOf("—") - 20), hit[1].indexOf("—") + 40))}` : "");
 }
 // "díjmentes" only inside the three v2 strings (case-insensitive; longest first so nesting cannot leak).
 {
