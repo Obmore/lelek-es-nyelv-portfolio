@@ -214,6 +214,43 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
   report(title === "Adatkezelési tájékoztató – Juhász Nagy Anna", "adatkezeles/index.html <title> equals the privacy page title", `got ${JSON.stringify(title)}`);
 }
 
+// Share metadata: canonical, Open Graph and Twitter card in both built pages
+{
+  const SITE = "https://obmore.github.io/lelek-es-nyelv-portfolio/";
+  const pages = [
+    ["index.html", join(distDir, "index.html"), SITE],
+    ["adatkezeles/index.html", join(distDir, "adatkezeles", "index.html"), `${SITE}adatkezeles/`],
+  ];
+  const metaContent = (html, attr, key) => {
+    for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
+      const tag = m[0];
+      if (new RegExp(`${attr}="${key}"`, "i").test(tag)) return tag.match(/content="([^"]*)"/i)?.[1];
+    }
+    return undefined;
+  };
+  for (const [label, path, url] of pages) {
+    const html = existsSync(path) ? decode(readFileSync(path, "utf8")) : "";
+    const canonical = html.match(/<link\b[^>]*rel="canonical"[^>]*>/i)?.[0]?.match(/href="([^"]*)"/i)?.[1];
+    report(canonical === url, `${label} canonical is ${url}`, `got ${JSON.stringify(canonical)}`);
+    const ogUrl = metaContent(html, "property", "og:url");
+    report(ogUrl === url, `${label} og:url is ${url}`, `got ${JSON.stringify(ogUrl)}`);
+    const ogImage = metaContent(html, "property", "og:image");
+    report(/^https:\/\/.+\/og-image\.png$/.test(ogImage ?? ""), `${label} og:image is an absolute og-image.png URL`, `got ${JSON.stringify(ogImage)}`);
+    report(metaContent(html, "property", "og:image:width") === "1200", `${label} og:image:width is 1200`);
+    report(metaContent(html, "property", "og:image:height") === "630", `${label} og:image:height is 630`);
+    report(metaContent(html, "name", "twitter:card") === "summary_large_image", `${label} twitter:card is summary_large_image`, `got ${JSON.stringify(metaContent(html, "name", "twitter:card"))}`);
+    report(!html.includes("%SITE_URL%"), `${label} has no unreplaced %SITE_URL% token`);
+  }
+  const imgPath = join(distDir, "og-image.png");
+  let dims = "missing";
+  if (existsSync(imgPath)) {
+    const b = readFileSync(imgPath);
+    const isPng = b.length >= 24 && b.subarray(1, 4).toString("latin1") === "PNG";
+    dims = isPng ? `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}` : "not a PNG";
+  }
+  report(dims === "1200x630", "dist-github-pages/og-image.png is a 1200x630 PNG", `got ${dims}`);
+}
+
 // E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
 report(built.includes(EMAIL), "built contains the expected contact e-mail");
 report(built.includes("https://formsubmit.co/"), "built contains the form endpoint prefix https://formsubmit.co/");
