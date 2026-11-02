@@ -335,7 +335,9 @@ function checkSocialLinks(where, footerHtml) {
     const link = matches[0];
     if (!link) continue;
     const rel = attr(link.open, "rel") ?? "";
-    check(link.label === `${label} ↗`, `${where} footer ${label} link label is "${label} ↗"`, JSON.stringify(link.label));
+    check(link.label.replace(/\s*\(új lapon nyílik\)$/, "") === `${label} ↗`, `${where} footer ${label} link label is "${label} ↗"`, JSON.stringify(link.label));
+    const hints = elements(link.inner, "[a-z0-9]+", /class="[^"]*\bsr-only\b/).map((el) => text(el.inner));
+    check(hints.length === 1 && hints[0] === "(új lapon nyílik)", `${where} footer ${label} link contains an .sr-only "(új lapon nyílik)" new-tab hint`, JSON.stringify(hints));
     check(attr(link.open, "target") === "_blank", `${where} footer ${label} link opens in a new tab`, link.open);
     check(/\bnoopener\b/i.test(rel) && /\bnoreferrer\b/i.test(rel), `${where} footer ${label} link has rel noopener noreferrer`, JSON.stringify(rel));
   }
