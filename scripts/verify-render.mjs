@@ -330,8 +330,11 @@ const anchorsIn = (fragment) =>
 /** When a social URL is set, the footer holds exactly one matching anchor: "<Label> ↗", new tab, noopener noreferrer. */
 function checkSocialLinks(where, footerHtml) {
   const links = anchorsIn(footerHtml);
-  for (const [constant, label] of SOCIALS) {
-    if (c[constant] == null) continue;
+  for (const [constant, label, host] of SOCIALS) {
+    if (c[constant] == null) {
+      check(!links.some((l) => l.href && l.href.includes(host)), `${where} footer has no ${label} link while ${constant} is null`, JSON.stringify(links.map((l) => l.href)));
+      continue;
+    }
     const matches = links.filter((l) => l.href === c[constant]);
     check(matches.length === 1, `${where} footer has exactly one ${label} link`, `${matches.length} anchors with href ${JSON.stringify(c[constant])}`);
     const link = matches[0];
