@@ -68,12 +68,19 @@ body {
   line-height: 1.5;
 }
 ::selection { color: var(--paper); background: var(--coral-deep); }
-/* Scrollbars in the site palette: sage-dark thumb on the cream track (5.4:1). */
-:root { scrollbar-color: var(--sage-dark) var(--cream); }
-/* Safari reads only the ::-webkit-scrollbar rules; Chromium ignores them once scrollbar-color is set. */
-::-webkit-scrollbar { width: 12px; height: 12px; background: var(--cream); }
-::-webkit-scrollbar-thumb { background: var(--sage-dark); border: 3px solid var(--cream); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: var(--coral-deep); }
+/* Scrollbars in the site palette: sage-dark thumb on the cream page (5.4:1), coral-deep on hover. */
+/* Firefox has no ::-webkit-scrollbar, so it gets the standard properties; Chromium would ignore the WebKit rules below if these applied to it. */
+@supports not selector(::-webkit-scrollbar) {
+  :root { scrollbar-width: thin; scrollbar-color: var(--sage-dark) var(--cream); }
+}
+/* Chromium and Safari: a slim rounded thumb without arrow buttons; desktop pointers only, so touch screens keep their overlay scrollbars. */
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar { width: 12px; height: 12px; background: transparent; }
+  html::-webkit-scrollbar { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: var(--sage-dark); background-clip: padding-box; border: 3px solid transparent; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background-color: var(--coral-deep); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+}
 a { color: inherit; text-decoration: none; }
 button { color: inherit; font: inherit; }
 :focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 3px; }
