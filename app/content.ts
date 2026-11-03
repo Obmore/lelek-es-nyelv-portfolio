@@ -9,7 +9,7 @@ export const FORM_AJAX_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
 
 /** Optional links: the link renders only when the URL is set. */
 export const INSTAGRAM_URL: string | null = null;
-export const FACEBOOK_URL: string | null = null;
+export const FACEBOOK_URL: string | null = 'https://www.facebook.com/anna.juhasznagy';
 export const PRIVACY_URL: string | null = 'adatkezeles/';
 
 /** Single source of truth for prices (used by the cards and by the FAQ). */
@@ -139,7 +139,7 @@ export const ABOUT_STAMP = 'ELTE · SOTE';
 /** Consent checkbox text; CONSENT_LINK is rendered as a link to the privacy notice. */
 export const CONSENT_BEFORE = 'Elolvastam az';
 export const CONSENT_LINK = 'adatkezelési tájékoztatót';
-export const CONSENT_AFTER = ', és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat – az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is – a kapcsolatfelvétel és a válaszadás céljából kezelje.';
+export const CONSENT_AFTER = ', és kifejezetten hozzájárulok, hogy Juhász Nagy Anna a megadott adataimat (az üzenetemben esetleg megosztott, egészségemmel kapcsolatos információkat is) a kapcsolatfelvétel és a válaszadás céljából kezelje.';
 
 export const methodSteps = [
   { number: '01', title: 'Kapcsolódunk', text: 'Egy rövid, díjmentes online ismerkedő beszélgetésen megismerjük egymást és a kérdésedet.', word: 'hello' },

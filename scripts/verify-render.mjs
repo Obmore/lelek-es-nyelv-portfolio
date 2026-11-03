@@ -145,6 +145,17 @@ const decode = (s) =>
       hx ? String.fromCodePoint(parseInt(hx, 16)) : dc ? String.fromCodePoint(parseInt(dc, 10)) : (ENT[nm] ?? m));
 const text = (fragment) => decode(fragment.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
 const norm = (s) => s.replace(/\s+/g, " ").trim();
+/** Whitespace-separated lowercase tokens of an attribute value, for whole-token comparison. */
+const tokens = (value) => (value ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+/** True when href points at host or one of its subdomains (case-insensitive via URL parsing, one trailing dot ignored); relative and protocol-relative hrefs are resolved against a dummy base. */
+const onHost = (href, host) => {
+  try {
+    const h = new URL(href, "https://base.invalid/").hostname.replace(/\.$/, "");
+    return h === host || h.endsWith(`.${host}`);
+  } catch {
+    return false;
+  }
+};
 
 /** Every element whose opening tag matches `openRe`; returns {open, inner} with balanced same-name nesting. */
 function elements(source, tag, openRe) {
@@ -303,13 +314,21 @@ for (const item of c.testimonials) {
 /* ---- optional links ---- */
 const visible = text(html);
 const allHrefs = [...html.matchAll(/<a\b[^>]*>/g)].map((m) => attr(m[0], "href"));
-for (const [constant, label, host] of [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL", "Facebook", "facebook.com"]]) {
+const SOCIALS = [["INSTAGRAM_URL", "Instagram", "instagram.com"], ["FACEBOOK_URL", "Facebook", "facebook.com"]];
+for (const [constant, label, host] of SOCIALS) {
   check(constant in c, `${constant} is exported by content.ts`);
   if (c[constant] == null) {
-    check(!allHrefs.some((h) => h && h.includes(host)), `no ${host} link while ${constant} is null`);
+    check(!allHrefs.some((h) => onHost(h, host)), `no ${host} link while ${constant} is null`);
     check(!visible.includes(label), `no "${label}" text while ${constant} is null`);
   } else {
     check(allHrefs.includes(c[constant]), `${label} link renders when ${constant} is set`);
+    let url = null;
+    try {
+      url = new URL(c[constant]);
+    } catch {
+      // reported by the check below
+    }
+    check(url !== null && url.protocol === "https:" && (url.hostname === host || url.hostname.endsWith(`.${host}`)), `${constant} is an https URL on ${host}`, JSON.stringify(c[constant]));
   }
 }
 const anchorsIn = (fragment) =>
@@ -317,6 +336,26 @@ const anchorsIn = (fragment) =>
     const open = m[0].match(/<a\b[^>]*>/)[0];
     return { open, href: attr(open, "href"), label: text(m[1]), inner: m[1] };
   });
+/** When a social URL is set, the footer holds exactly one matching anchor: "<Label> ↗", new tab, noopener noreferrer. */
+function checkSocialLinks(where, footerHtml) {
+  const links = anchorsIn(footerHtml);
+  for (const [constant, label, host] of SOCIALS) {
+    if (c[constant] == null) {
+      check(!links.some((l) => onHost(l.href, host)), `${where} footer has no ${label} link while ${constant} is null`, JSON.stringify(links.map((l) => l.href)));
+      continue;
+    }
+    const matches = links.filter((l) => l.href === c[constant]);
+    check(matches.length === 1, `${where} footer has exactly one ${label} link`, `${matches.length} anchors with href ${JSON.stringify(c[constant])}`);
+    const link = matches[0];
+    if (!link) continue;
+    const rel = attr(link.open, "rel") ?? "";
+    check(link.label.replace(/\s*\(új lapon nyílik\)$/, "") === `${label} ↗`, `${where} footer ${label} link label is "${label} ↗"`, JSON.stringify(link.label));
+    const hints = elements(link.inner, "[a-z0-9]+", /\sclass="(?:[^"]*\s)?sr-only(?:\s[^"]*)?"/).map((el) => text(el.inner));
+    check(hints.length === 1 && hints[0] === "(új lapon nyílik)", `${where} footer ${label} link contains an .sr-only "(új lapon nyílik)" new-tab hint`, JSON.stringify(hints));
+    check(attr(link.open, "target") === "_blank", `${where} footer ${label} link opens in a new tab`, link.open);
+    check(tokens(rel).includes("noopener") && tokens(rel).includes("noreferrer"), `${where} footer ${label} link has rel noopener noreferrer`, JSON.stringify(rel));
+  }
+}
 {
   const footer = elements(html, "footer", /^<footer/)[0];
   check(Boolean(footer), "footer rendered");
@@ -324,6 +363,7 @@ const anchorsIn = (fragment) =>
     const links = anchorsIn(footer.inner);
     check(links.some((l) => l.label === "Adatkezelés" && l.href === "adatkezeles/"), "footer has an Adatkezelés link to adatkezeles/", JSON.stringify(links));
     check(has(text(footer.inner), "Juhász Nagy Anna"), "footer contains Juhász Nagy Anna");
+    checkSocialLinks("home", footer.inner);
   }
 }
 
@@ -351,6 +391,9 @@ if (privacyHtml !== null) {
   const PHONE_ITEM = "a telefonszámod (ha telefonon kérsz választ; egyébként csak ha megadod),";
   const items = elements(privacyHtml, "li", /^<li/).map((el) => text(el.inner));
   check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
+  const privFooter = elements(privacyHtml, "footer", /^<footer/)[0];
+  check(Boolean(privFooter), "privacy page footer rendered");
+  if (privFooter) checkSocialLinks("privacy page", privFooter.inner);
   const privAnchors = anchorsIn(privacyHtml);
   const privLinks = privAnchors.map((a) => a.open);
   check(privAnchors.some((a) => a.href === "../"), "privacy page links back to the home page with href=\"../\"");
@@ -362,7 +405,7 @@ if (privacyHtml !== null) {
     const rel = attr(open, "rel") ?? "";
     if (/^(https?:)?\/\//i.test(href)) {
       inspected++;
-      if (target !== "_blank" || !/\bnoopener\b/i.test(rel)) bad.push(href);
+      if (target !== "_blank" || !tokens(rel).includes("noopener")) bad.push(href);
     } else if (/^mailto:/i.test(href) || href.startsWith("#")) {
       inspected++;
       if (target !== null) bad.push(href);
@@ -387,10 +430,10 @@ check(bundleText.includes("#adatkezeles") && bundleText.includes("location.repla
     const links = anchorsIn(label.inner);
     check(links.some((l) => l.href === "adatkezeles/" && l.label.replace(/\s*\(új lapon nyílik\)$/, "") === "adatkezelési tájékoztatót"), "consent label links adatkezelési tájékoztatót to adatkezeles/", JSON.stringify(links));
     const consentLink = links.find((l) => l.href === "adatkezeles/");
-    const hints = consentLink ? elements(consentLink.inner, "[a-z0-9]+", /class="[^"]*\bsr-only\b/).map((el) => text(el.inner)) : [];
+    const hints = consentLink ? elements(consentLink.inner, "[a-z0-9]+", /\sclass="(?:[^"]*\s)?sr-only(?:\s[^"]*)?"/).map((el) => text(el.inner)) : [];
     check(hints.length === 1 && hints[0] === "(új lapon nyílik)", "consent privacy link contains an .sr-only \"(új lapon nyílik)\" new-tab hint", JSON.stringify(hints));
     const consentOpen = [...label.inner.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]).find((o) => attr(o, "href") === "adatkezeles/");
-    check(Boolean(consentOpen) && attr(consentOpen, "target") === "_blank" && /\bnoopener\b/i.test(attr(consentOpen, "rel") ?? ""), "consent privacy link has target=\"_blank\" and rel containing noopener", String(consentOpen));
+    check(Boolean(consentOpen) && attr(consentOpen, "target") === "_blank" && tokens(attr(consentOpen, "rel")).includes("noopener"), "consent privacy link has target=\"_blank\" and rel containing noopener", String(consentOpen));
     check(has(text(label.inner), "egészségemmel kapcsolatos"), "consent label mentions egészségemmel kapcsolatos");
   }
 }

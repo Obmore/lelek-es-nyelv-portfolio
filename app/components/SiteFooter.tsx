@@ -21,8 +21,8 @@ export default function SiteFooter({ home = false }: { home?: boolean }) {
       </a>
       <div className="footer-contact">
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-        {INSTAGRAM_URL && <a href={INSTAGRAM_URL} rel="noopener noreferrer" target="_blank">Instagram ↗</a>}
-        {FACEBOOK_URL && <a href={FACEBOOK_URL} rel="noopener noreferrer" target="_blank">Facebook ↗</a>}
+        {INSTAGRAM_URL && <a href={INSTAGRAM_URL} rel="noopener noreferrer" target="_blank">Instagram ↗<span className="sr-only">{' (új lapon nyílik)'}</span></a>}
+        {FACEBOOK_URL && <a href={FACEBOOK_URL} rel="noopener noreferrer" target="_blank">Facebook ↗<span className="sr-only">{' (új lapon nyílik)'}</span></a>}
       </div>
       <div className="footer-small">
         <span>© <span key={hydrated ? 'client' : 'server'} suppressHydrationWarning>{new Date().getFullYear()}</span> {OWNER_NAME}</span>
