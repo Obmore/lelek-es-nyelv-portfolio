@@ -3,7 +3,7 @@
 // scripts/verify-content.mjs. For a custom domain change only this line.
 
 /** Absolute public URL of the site, with a trailing slash. */
-export const SITE_URL = 'https://obmore.github.io/lelek-es-nyelv-portfolio/';
+export const SITE_URL = 'https://lelekesnyelv.hu/';
 
 /** Path part of SITE_URL, used as the Vite `base`. */
 export const BASE_PATH = new URL(SITE_URL).pathname;
