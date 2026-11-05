@@ -42,11 +42,11 @@ The script renders an HTML template with the bundled fonts in Microsoft Edge thr
 
 ## Custom domain
 
-The site is served from `https://lelekesnyelv.hu/`. Follow this order for this domain and for any later change; merge the `SITE_URL` change only after steps 1 to 3 are done.
+The site is served from `https://lelekesnyelv.hu/`. Follow this order for this domain and for any later change. The `SITE_URL` change is merged together with saving the custom domain (step 3), after the verification and DNS steps.
 
-1. DNS at the registrar: four `A` records on the apex (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`), four `AAAA` records (`2606:50c0:8000::153` to `2606:50c0:8003::153`), and `www` as a `CNAME` to `obmore.github.io.`. Remove the registrar's default parking records. No wildcard records.
-2. Optional but recommended: verify the domain for the GitHub account (Settings > Pages > Add a domain, a TXT record) to prevent takeover.
-3. Set the custom domain in the repository's Settings > Pages, then merge the `SITE_URL` change in `site.config.mjs` right away (absolute URL with trailing slash; the Vite `base`, the canonical and Open Graph tags, the favicon links and the verify-content expectations all follow it). Until the new build is live, the old build's asset paths (`/lelek-es-nyelv-portfolio/...`) do not resolve on the new domain. The deployment uses GitHub Actions, so no CNAME file is needed.
+1. Verify the domain for the GitHub account first, before any DNS record points at GitHub Pages: in the account settings (Settings > Pages > Add a domain), add the `_github-pages-challenge-<account>` TXT record GitHub shows at the registrar, and click Verify once the TXT record resolves. GitHub then keeps the domain for this account, so no other account can claim it.
+2. DNS at the registrar: four `A` records on the apex (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`), four `AAAA` records (`2606:50c0:8000::153` to `2606:50c0:8003::153`; optional if the registrar has no AAAA), and `www` as a `CNAME` to `obmore.github.io.`. Remove the registrar's default parking records. No wildcard records.
+3. When the domain resolves and is verified, enter exactly the apex `lelekesnyelv.hu` (not `www.lelekesnyelv.hu`) as the custom domain in the repository's Settings > Pages, so GitHub redirects `www` to the apex and the canonical URL stays `https://lelekesnyelv.hu/`. In the same minute, merge the `SITE_URL` change in `site.config.mjs` (absolute URL with trailing slash; the Vite `base`, the canonical and Open Graph tags, the favicon links and the verify-content expectations all follow it). Until the new build is live, the old build's asset paths (`/lelek-es-nyelv-portfolio/...`) do not resolve on the new domain. The deployment uses GitHub Actions, so no CNAME file is needed.
 4. Enforce HTTPS once GitHub has issued the certificate (can take up to an hour).
 5. Send one test message from the live form: FormSubmit may ask the recipient to activate the form again for the new domain (its docs do not say).
 6. Re-scrape the new URL in the Facebook Sharing Debugger.
