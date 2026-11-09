@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, FACEBOOK_URL, INSTAGRAM_URL, OWNER_NAME, PRIVACY_URL } from '../content';
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_HREF, FACEBOOK_URL, INSTAGRAM_URL, OWNER_NAME, PRIVACY_URL } from '../content';
 
 /** Shared footer. `home` links the brand to the top of the page; otherwise to the home page and without the self-link to the notice. */
 export default function SiteFooter({ home = false }: { home?: boolean }) {
@@ -13,6 +13,7 @@ export default function SiteFooter({ home = false }: { home?: boolean }) {
       </a>
       <div className="footer-contact">
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        <a href={CONTACT_PHONE_HREF}>{CONTACT_PHONE}</a>
         {INSTAGRAM_URL && <a href={INSTAGRAM_URL} rel="noopener noreferrer" target="_blank">Instagram ↗<span className="sr-only">{' (új lapon nyílik)'}</span></a>}
         {FACEBOOK_URL && <a href={FACEBOOK_URL} rel="noopener noreferrer" target="_blank">Facebook ↗<span className="sr-only">{' (új lapon nyílik)'}</span></a>}
       </div>

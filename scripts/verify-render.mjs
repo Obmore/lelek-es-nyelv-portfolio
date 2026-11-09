@@ -116,6 +116,16 @@ const c = mod.content;
 // Hard-coded on purpose, never read from app/ (circular); EXPECTED_CONTACT_EMAIL may override it.
 const EMAIL = (process.env.EXPECTED_CONTACT_EMAIL ?? "").trim() || "juhasznagyanna@gmail.com";
 
+// Hard-coded on purpose too: the public phone number, as display text (U+00A0 between the groups) and link.
+const PHONE_TEXT = "+36\u00a020\u00a0319\u00a05621";
+const PHONE_HREF = "tel:+36203195621";
+
+/** Exactly one tel: link in `fragment`: href, text, and no target or rel attribute. */
+function checkPhoneLink(where, fragment) {
+  const tel = anchorsIn(fragment).filter((a) => (a.href ?? "").toLowerCase().startsWith("tel:"));
+  check(tel.length === 1 && tel[0].href === PHONE_HREF && tel[0].label === PHONE_TEXT && attr(tel[0].open, "target") === null && attr(tel[0].open, "rel") === null, `${where} has exactly one tel: link, href ${PHONE_HREF}, text "+36 20 319 5621" with U+00A0, no target`, JSON.stringify(tel.map((a) => [a.href, a.label, a.open])));
+}
+
 /* ---- v2 spec strings (expectations come from the spec, not from content.ts) ---- */
 const MIND_SCOPE = "Segítő beszélgetés felnőtteknek, fiataloknak és gyermekeknek";
 const OLD_AUDIENCE = "Felnőtteknek, gyermekeknek és fiataloknak";
@@ -396,6 +406,19 @@ function checkSocialLinks(where, footerHtml) {
     check(links.some((l) => l.label === "Adatkezelés" && l.href === "adatkezeles/"), "footer has an Adatkezelés link to adatkezeles/", JSON.stringify(links));
     check(has(text(footer.inner), "Juhász Nagy Anna"), "footer contains Juhász Nagy Anna");
     checkSocialLinks("home", footer.inner);
+    checkPhoneLink("home footer", footer.inner);
+  }
+}
+{
+  const sections = elements(html, "section", /\sid="kapcsolat"/);
+  check(sections.length === 1, "home page has exactly one #kapcsolat contact section", String(sections.length));
+  if (sections.length === 1) {
+    const direct = elements(sections[0].inner, "p", /\sclass="contact-direct"/);
+    check(direct.length === 1, "contact section has exactly one .contact-direct paragraph", String(direct.length));
+    if (direct.length === 1) {
+      check(text(direct[0].inner).startsWith("Telefonon is eléred Annát:"), "contact-direct paragraph starts with the phone invitation", JSON.stringify(text(direct[0].inner)));
+      checkPhoneLink("contact-direct paragraph", direct[0].inner);
+    }
   }
 }
 
@@ -425,7 +448,16 @@ if (privacyHtml !== null) {
   check(items.includes(PHONE_ITEM), "privacy data list contains the phone item", JSON.stringify(items.filter((i) => /telefonszám/i.test(i))));
   const privFooter = elements(privacyHtml, "footer", /^<footer/)[0];
   check(Boolean(privFooter), "privacy page footer rendered");
-  if (privFooter) checkSocialLinks("privacy page", privFooter.inner);
+  if (privFooter) {
+    checkSocialLinks("privacy page", privFooter.inner);
+    checkPhoneLink("privacy page footer", privFooter.inner);
+  }
+  {
+    const rows = elements(elements(privacyHtml, "dl", /^<dl/)[0]?.inner ?? "", "div", /^<div/).map((r) => ({ term: text(elements(r.inner, "dt", /^<dt/)[0]?.inner ?? ""), inner: elements(r.inner, "dd", /^<dd/)[0]?.inner ?? "" }));
+    const at = rows.findIndex((r) => r.term === "E-mail");
+    check(at >= 0 && rows[at + 1]?.term === "Telefon", "privacy imprint has a Telefon row right after the E-mail row", JSON.stringify(rows.map((r) => r.term)));
+    if (at >= 0 && rows[at + 1]?.term === "Telefon") checkPhoneLink("privacy imprint Telefon row", rows[at + 1].inner);
+  }
   const privAnchors = anchorsIn(privacyHtml);
   const privLinks = privAnchors.map((a) => a.open);
   check(privAnchors.some((a) => a.href === "../"), "privacy page links back to the home page with href=\"../\"");
@@ -438,12 +470,12 @@ if (privacyHtml !== null) {
     if (/^(https?:)?\/\//i.test(href)) {
       inspected++;
       if (target !== "_blank" || !tokens(rel).includes("noopener")) bad.push(href);
-    } else if (/^mailto:/i.test(href) || href.startsWith("#")) {
+    } else if (/^(mailto|tel):/i.test(href) || href.startsWith("#")) {
       inspected++;
       if (target !== null) bad.push(href);
     }
   }
-  check(bad.length === 0 && inspected > 0, `privacy links (${inspected} inspected): external open in a new tab with noopener; mailto and # have no target`, JSON.stringify(bad));
+  check(bad.length === 0 && inspected > 0, `privacy links (${inspected} inspected): external open in a new tab with noopener; mailto, tel and # have no target`, JSON.stringify(bad));
   const badPrivHrefs = privAnchors.map((a) => a.href).filter((h) => h == null || h.trim() === "" || h.trim() === "#" || /^(null|undefined)$/.test(h.trim()));
   check(badPrivHrefs.length === 0, "privacy page: no <a> has an empty, #-only or null/undefined href", JSON.stringify(badPrivHrefs));
   const pIds = new Set([...privacyHtml.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]));

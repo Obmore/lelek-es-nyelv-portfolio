@@ -328,7 +328,13 @@ for (const stem of ["anna-portrait-480.webp", "anna-portrait-800.webp", "anna-po
   const nameOf = (priceConst) => source.match(new RegExp(`name: '([^']*)',(?:(?!name: ')[^])*?price: ${priceConst}`))?.[1];
   const expected = [[nameOf("PRICE_MENTAL"), priceOf("PRICE_MENTAL"), "HUF"], [nameOf("PRICE_ENGLISH"), priceOf("PRICE_ENGLISH"), "HUF"]];
   report(expected.every((e) => e[0] && e[1] > 0) && JSON.stringify(offers) === JSON.stringify(expected), "JSON-LD offers match the content names and prices", `got ${JSON.stringify(offers)} want ${JSON.stringify(expected)}`);
-  report(!/[a-z0-9.-]+@[a-z0-9-]+[.][a-z]+|tel:|openingHours|aggregateRating|address/i.test(ldRaw ?? "x"), "JSON-LD has no e-mail, phone, address, hours or rating");
+  report(!/[a-z0-9.-]+@[a-z0-9-]+[.][a-z]+|openingHours|aggregateRating|address/i.test(ldRaw ?? "x"), "JSON-LD has no e-mail, address, hours or rating");
+  const phoneLiteral = readFileSync(join(appDir, "content.ts"), "utf8").match(/export const CONTACT_PHONE\s*=\s*'([^']*)'/)?.[1] ?? "";
+  const phoneText = phoneLiteral.replace(/\\u00a0/g, NB);
+  report(phoneLiteral === "+36\\u00a020\\u00a0319\\u00a05621" && phoneText === `+36${NB}20${NB}319${NB}5621`, "app/content.ts CONTACT_PHONE is +36, 20, 319, 5621 joined by three \\u00a0 escapes (U+00A0)", JSON.stringify(phoneLiteral));
+  report(/export const CONTACT_PHONE_HREF\s*=\s*'tel:\+36203195621'/.test(source), "app/content.ts CONTACT_PHONE_HREF is tel:+36203195621");
+  report(ld?.telephone === phoneText.replaceAll(NB, " ") && ld?.telephone === "+36 20 319 5621", "JSON-LD telephone equals CONTACT_PHONE with U+00A0 as a plain space", JSON.stringify(ld?.telephone));
+  report(built.includes("tel:+36203195621"), "built site contains the tel:+36203195621 link target");
 
   // Font preloads: exactly the two critical fonts, pointing at files that exist.
   for (const [label, rel] of [["index.html", "index.html"], ["adatkezeles/index.html", "adatkezeles/index.html"]]) {
