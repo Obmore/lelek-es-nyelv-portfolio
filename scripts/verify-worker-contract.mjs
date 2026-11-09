@@ -6,6 +6,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SITE_URL } from "../site.config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => readFileSync(join(root, rel), "utf8");
@@ -59,6 +60,8 @@ const workerConsent = stringConst(contract, "CONSENT_VALUE", "contract.ts");
 const workerHoney = stringConst(contract, "HONEYPOT", "contract.ts");
 const workerDestination = stringConst(contract, "DESTINATION", "contract.ts");
 const workerFields = objectValues(contract, "FIELDS", "contract.ts");
+const workerOrigin = stringConst(contract, "ALLOWED_ORIGIN", "contract.ts");
+const workerSender = stringConst(contract, "SENDER", "contract.ts");
 
 // Site side.
 const topicsMatch = content.match(/export const topics\s*=\s*\[([^\]]*)\]/);
@@ -87,13 +90,20 @@ const siteFields = [...new Set(formNames.filter((n) => !n.startsWith("_")))];
 const siteHidden = [...new Set(formNames.filter((n) => n.startsWith("_")))];
 const consentValue = formMatch[0].match(/name="Adatkezelési hozzájárulás"[^>]*\bvalue="([^"]*)"/)?.[1];
 
+for (const [label, list] of [["site topics", siteTopics], ["Worker topics", workerTopics], ["site reply preferences", sitePrefs], ["Worker reply preferences", workerPrefs], ["site form fields", siteFields], ["Worker fields", workerFields]]) {
+  if (list.length === 0) fail(`${label}: parsed to an empty list`);
+}
 sameSet("topics", siteTopics, workerTopics);
 sameSet("reply preferences", sitePrefs, workerPrefs);
 sameSet("form field names", siteFields, workerFields);
 if (phoneReply !== workerPhonePref) fail(`phone preference: site PHONE_REPLY ${JSON.stringify(phoneReply)} vs Worker ${JSON.stringify(workerPhonePref)}`);
 if (consentValue !== workerConsent) fail(`consent value: site ${JSON.stringify(consentValue)} vs Worker ${JSON.stringify(workerConsent)}`);
 if (!siteHidden.includes(workerHoney)) fail(`honeypot: the form has no input named ${workerHoney}`);
-if (!handler.includes("HONEYPOT")) fail("honeypot: the Worker handler does not use HONEYPOT");
+if (!/\binput\[HONEYPOT\]/.test(handler)) fail("honeypot: the Worker handler does not read input[HONEYPOT]");
+const siteOrigin = new URL(SITE_URL).origin;
+if (workerOrigin !== siteOrigin) fail(`origin: Worker ALLOWED_ORIGIN ${JSON.stringify(workerOrigin)} vs the origin of SITE_URL ${JSON.stringify(siteOrigin)}`);
+const senderDomain = workerSender.split("@")[1];
+if (senderDomain !== new URL(siteOrigin).host) fail(`sender: domain of SENDER ${JSON.stringify(senderDomain)} vs site host ${JSON.stringify(new URL(siteOrigin).host)}`);
 if (workerDestination !== siteEmail) fail(`destination: Worker ${JSON.stringify(workerDestination)} vs CONTACT_EMAIL ${JSON.stringify(siteEmail)}`);
 const bindingDestination = wrangler.match(/"destination_address"\s*:\s*"([^"]*)"/)?.[1];
 if (bindingDestination !== workerDestination) fail(`destination: wrangler.jsonc ${JSON.stringify(bindingDestination)} vs contract.ts ${JSON.stringify(workerDestination)}`);
