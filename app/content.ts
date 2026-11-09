@@ -5,7 +5,7 @@
 export const OWNER_NAME = 'Juhász Nagy Anna';
 export const CONTACT_EMAIL = 'juhasznagyanna@gmail.com';
 /** The owner's public phone number: display text (with U+00A0 between the groups) and its tel: link. */
-export const CONTACT_PHONE = '+36 20 319 5621';
+export const CONTACT_PHONE = '+36\u00a020\u00a0319\u00a05621';
 export const CONTACT_PHONE_HREF = 'tel:+36203195621';
 export const FORM_ENDPOINT = `https://formsubmit.co/${CONTACT_EMAIL}`;
 export const FORM_AJAX_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
