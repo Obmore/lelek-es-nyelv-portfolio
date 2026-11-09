@@ -433,6 +433,7 @@ if (privacyHtml !== null) {
   const t = text(privacyHtml);
   const h1s = [...privacyHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map((m) => text(m[1]));
   check(h1s.length === 1 && h1s[0] === "Adatkezelési tájékoztató", "privacy page has one <h1> Adatkezelési tájékoztató", JSON.stringify(h1s));
+  // Regression guard: FormSubmit is no longer used; keep this check.
   check(!/formsubmit/i.test(t), "privacy page does not mention formsubmit");
   for (const needle of ["Juhász Nagy Anna", "Cloudflare (cloudflare.com)", "megőrzési idejét a Cloudflare szabályozza", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
     check(has(t, needle), `privacy page contains "${needle}"`);
