@@ -370,7 +370,7 @@ export default function Home() {
                       decoding="async"
                     />
                   </picture>
-                  <span className="portrait-caption">presence<br />before<br />performance</span>
+                  <span className="portrait-caption" lang="en">presence<br />before<br />performance</span>
                 </div>
                 <span className="stamp">{ABOUT_STAMP}</span>
               </div>

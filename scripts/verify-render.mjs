@@ -325,6 +325,8 @@ for (const item of c.testimonials) {
     const webpSet = descriptors(attr(sources[0] ?? "", "srcSet"));
     check(sources.length === 1 && ["480w", "800w"].every((w) => webpSet.some(([url, d]) => d === w && /\.webp(\?|$)/.test(url))) && webpSet.length === 2, "portrait <source type=image/webp> srcset has 480w + 800w", JSON.stringify(attr(sources[0] ?? "", "srcSet")));
     check(!/portrait-initial/.test(about.inner), "portrait-initial no longer renders");
+    const captions = elements(about.inner, "span", /class="[^"]*\bportrait-caption\b/);
+    check(captions.length === 1 && attr(captions[0].open, "lang") === "en", "portrait-caption span has lang=en", `count ${captions.length}`);
   }
 }
 
