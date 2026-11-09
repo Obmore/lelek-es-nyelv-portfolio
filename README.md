@@ -15,7 +15,7 @@ Everything the visitor reads lives in `app/content.ts`: copy, prices, testimonia
 ```
 npm ci
 npm run dev        # http://localhost:5173/
-npm run check      # lint, typecheck, build, content and render checks
+npm run check      # lint (ESLint with typescript-eslint and react-hooks), typecheck, build, content and render checks
 npm run preview    # serve the production build
 ```
 
@@ -51,6 +51,14 @@ The site is served from `https://lelekesnyelv.hu/`. Follow this order for this d
 5. Send one test message from the live form: FormSubmit may ask the recipient to activate the form again for the new domain (its docs do not say).
 6. Re-scrape the new URL in the Facebook Sharing Debugger.
 
+## Maintenance
+
+- **Changing copy or prices:** edit `app/content.ts`. Approved texts and prices are deliberately pinned in `scripts/verify-content.mjs`, so `npm run check` fails until the pin is updated. Change the pin in the same commit.
+- **Adding a testimonial:** add an entry to `testimonials` in `app/content.ts` with the fields `id`, `author`, `category`, `label`, `pull` and `text`. `pull` must be an exact substring of `text`. Then add its text and author pins (the next `T` numbers) to `scripts/verify-content.mjs`.
+- **FormSubmit:** the first submission after a new domain or a new recipient address makes FormSubmit send an "Activate Form" e-mail to the recipient. Until the link in it is clicked, the form shows its error state with the e-mail fallback. Do one test send after any domain or address change.
+
 ## Dependencies
 
-Never run `npm audit fix --force` here: it downgrades eslint and breaks lint. Apply non-breaking fixes only.
+Node is pinned in `.nvmrc` (22); CI reads it too. Dependency versions are exact. Lint uses ESLint 9 with `@eslint/js`, `typescript-eslint` and `eslint-plugin-react-hooks`; Next.js is no longer a dependency.
+
+`npm audit` still reports one dev-only finding: a nested `minimatch` inside `typescript-eslint` (no upstream fix yet). It does not ship in the built site. Never run `npm audit fix --force` here: it would downgrade `typescript-eslint`. Apply non-breaking fixes only, and run `npm run check` afterwards.
