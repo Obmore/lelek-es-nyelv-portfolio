@@ -13,6 +13,8 @@ import {
   CONSENT_AFTER,
   CONSENT_BEFORE,
   CONSENT_LINK,
+  CONTACT_PHONE,
+  CONTACT_PHONE_HREF,
   FORM_AJAX_ENDPOINT,
   FORM_ENDPOINT,
   PRIVACY_URL,
@@ -512,6 +514,7 @@ export default function Home() {
                 <span>{promise.number}</span><p><b>{promise.title}</b><br />{promise.subline}</p>
               </div>
             ))}
+            <p className="contact-direct">Telefonon is eléred Annát: <a href={CONTACT_PHONE_HREF}>{CONTACT_PHONE}</a></p>
           </div>
 
           <form

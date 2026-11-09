@@ -382,12 +382,14 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .contact .section-kicker { color: var(--paper); }
 .contact h2 { font-size: clamp(60px, 8vw, 118px); line-height: .88; }
 .contact h2 em { color: var(--coral-light); }
-.contact-intro > p:not(.section-kicker) { max-width: 510px; margin: 42px 0 42px; font-size: 17px; line-height: 1.7; color: var(--paper); }
+.contact-intro > p:not(.section-kicker):not(.contact-direct) { max-width: 510px; margin: 42px 0 42px; font-size: 17px; line-height: 1.7; color: var(--paper); }
 .contact-promise { display: flex; gap: 18px; align-items: center; padding: 19px 0; border-top: 1px solid rgba(251,248,242,.35); }
 .contact-promise:last-child { border-bottom: 1px solid rgba(251,248,242,.35); }
 .contact-promise > span { font: italic 400 22px var(--font-serif); color: var(--paper); }
 .contact-promise p { margin: 0; font-size: 13px; line-height: 1.6; text-transform: uppercase; letter-spacing: .07em; }
 .contact-promise p b { color: var(--paper); font-weight: 700; }
+.contact-direct { margin: 28px 0 0; font-size: 17px; line-height: 1.7; color: var(--paper); }
+.contact-direct a { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; text-decoration: underline; text-underline-offset: 6px; text-decoration-color: rgba(251,248,242,.5); }
 
 .contact-form { position: relative; z-index: 2; align-self: start; padding: clamp(28px, 4vw, 54px); color: var(--ink); background: var(--paper); box-shadow: 0 30px 70px rgba(32,49,39,.25); }
 .contact-form :focus-visible { outline-color: var(--ink); }
@@ -458,7 +460,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: grid; grid-template-columns: 1fr auto; gap: 45px; color: var(--paper); background: var(--ink); align-items: start; }
 .footer-brand .brand-mark { color: var(--ink); background: var(--paper); border-color: var(--paper); }
 .footer-brand small { color: rgba(251,248,242,.78); }
-.footer-contact { display: flex; gap: 28px; font-size: 14px; }
+.footer-contact { display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 28px; row-gap: 0; min-width: 0; font-size: 14px; }
 .footer-contact a, .footer-small a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 6px; text-decoration-color: rgba(251,248,242,.5); }
 .footer-small { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-top: 25px; border-top: 1px solid rgba(251,248,242,.18); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: rgba(251,248,242,.78); }
 
