@@ -1,5 +1,3 @@
-'use client';
-
 import { useSyncExternalStore } from 'react';
 import { CONTACT_EMAIL, FACEBOOK_URL, INSTAGRAM_URL, OWNER_NAME, PRIVACY_URL } from '../content';
 
@@ -14,9 +12,9 @@ export default function SiteFooter({ home = false }: { home?: boolean }) {
       <a
         className="brand footer-brand"
         href={home ? '#top' : '../'}
-        aria-label={home ? 'Vissza az oldal tetejére' : 'Vissza a főoldalra'}
+        aria-label={home ? 'Anna, Lélek & Nyelv, vissza az oldal tetejére' : 'Anna, Lélek & Nyelv, vissza a főoldalra'}
       >
-        <span className="brand-mark">A</span>
+        <span className="brand-mark" aria-hidden="true">A</span>
         <span><strong>ANNA</strong><small>lélek &amp; nyelv</small></span>
       </a>
       <div className="footer-contact">

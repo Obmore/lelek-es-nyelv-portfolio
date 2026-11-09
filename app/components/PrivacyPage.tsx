@@ -6,9 +6,10 @@ import { renderInline } from '../lib/inline';
 export default function PrivacyPage() {
   return (
     <>
+      <a className="skip-link" href="#main">Ugrás a tartalomra</a>
       <header className="site-header privacy-header">
-        <a className="brand" href="../" aria-label="Lélek és nyelv – vissza a főoldalra">
-          <span className="brand-mark">A</span>
+        <a className="brand" href="../" aria-label="Anna, Lélek & Nyelv, vissza a főoldalra">
+          <span className="brand-mark" aria-hidden="true">A</span>
           <span>
             <strong>ANNA</strong>
             <small>lélek &amp; nyelv</small>
@@ -19,7 +20,7 @@ export default function PrivacyPage() {
         </a>
       </header>
 
-      <main className="privacy" aria-labelledby="privacy-title">
+      <main id="main" tabIndex={-1} className="privacy" aria-labelledby="privacy-title">
         <div className="privacy-inner">
           <p className="section-kicker">Jogi tájékoztató</p>
           <h1 id="privacy-title">{PRIVACY_TITLE}</h1>

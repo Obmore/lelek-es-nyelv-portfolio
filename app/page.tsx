@@ -1,5 +1,3 @@
-'use client';
-
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { FormStatus, FormStatusText } from './components/FormStatus';
 import SiteFooter from './components/SiteFooter';
@@ -260,11 +258,12 @@ export default function Home() {
 
   return (
     <>
+      <a className="skip-link" href="#main">Ugrás a tartalomra</a>
       <div className="progress-bar" ref={progressRef} aria-hidden="true" />
 
       <header className="site-header" ref={headerRef}>
-        <a className="brand" href="#top" aria-label="Lélek és nyelv – főoldal" onClick={goTo('top')}>
-          <span className="brand-mark">A</span>
+        <a className="brand" href="#top" aria-label="Anna, Lélek & Nyelv, főoldal" onClick={goTo('top')}>
+          <span className="brand-mark" aria-hidden="true">A</span>
           <span>
             <strong>ANNA</strong>
             <small>lélek &amp; nyelv</small>
@@ -294,7 +293,7 @@ export default function Home() {
         </button>
       </header>
 
-      <main ref={mainRef}>
+      <main id="main" tabIndex={-1} ref={mainRef}>
         <section className="hero" id="top" tabIndex={-1} aria-labelledby="top-title">
           <div className="hero-copy">
             <p className="eyebrow reveal-first"><span /> Mentálhigiéné &amp; angoltanítás</p>
@@ -551,7 +550,7 @@ export default function Home() {
               </label>
               <label className="field">
                 <span>E-mail-címed</span>
-                <input type="email" name="E-mail" placeholder="nev@email.hu" autoComplete="email" required />
+                <input type="email" name="email" placeholder="nev@email.hu" autoComplete="email" required />
               </label>
               <label className="field">
                 <span>Hogyan válaszoljak?</span>
