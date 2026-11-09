@@ -217,7 +217,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .quote-card p { margin: 2px 0 13px; font: italic 400 16px/1.55 var(--font-serif); }
 .quote-mark { font: 400 38px/1 var(--font-serif); color: var(--coral-deep); }
 .quote-sign { font: italic 400 14px var(--font-serif); color: var(--ink-soft); }
-.visual-note { position: absolute; z-index: 2; left: 25px; top: 50%; margin: 0; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; }
+.visual-note { position: absolute; z-index: 2; left: 25px; bottom: 32px; max-height: calc(100% - 64px); margin: 0; white-space: nowrap; overflow: hidden; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; }
 .visual-note span { color: var(--paper); margin: 7px 0; }
 
 /* Phase 2: the WebGL scene replaces the CSS blob, rings and dots; disc text and quote card stay. */
@@ -312,7 +312,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .method-intro { position: sticky; top: calc(var(--header-h) + 24px); align-self: start; }
 .method-intro > p:last-child { max-width: 390px; margin: 34px 0 0; font-size: 17px; line-height: 1.7; color: var(--ink-soft); }
 .steps { border-top: 1px solid var(--line); }
-.steps article { position: relative; min-height: 220px; display: grid; grid-template-columns: 48px 1fr; gap: 32px; align-items: center; border-bottom: 1px solid var(--line); overflow: hidden; }
+.steps article { position: relative; min-height: 220px; padding-bottom: 76px; display: grid; grid-template-columns: 48px 1fr; gap: 32px; align-items: center; border-bottom: 1px solid var(--line); overflow: hidden; }
 .step-number { align-self: start; padding-top: 53px; font: italic 400 20px var(--font-serif); color: var(--accent-text); }
 .steps h3 { margin: 0 0 13px; font: 400 34px var(--font-serif); }
 .steps p { max-width: 480px; margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink-soft); }
@@ -548,6 +548,8 @@ footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: 
   .hero-actions .button { width: 100%; }
   .hero-visual { min-height: 540px; }
   .quote-card { right: 18px; width: 220px; }
+  .visual-note { left: 18px; font-size: 11px; letter-spacing: .1em; }
+  .visual-note span { margin: 5px 0; }
   .about { padding-bottom: 85px; }
   .about-main, .services-main, .method-main, .faq-main { padding: 64px 24px 0; }
   .about-grid { margin-top: 50px; }
@@ -563,7 +565,7 @@ footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: 
   .service-details { padding: 0 0 70px; }
   .service-details > p:first-child { font-size: 18px; }
   .method { padding-bottom: 85px; }
-  .steps article { min-height: 220px; grid-template-columns: 34px 1fr; gap: 15px; }
+  .steps article { min-height: 220px; padding-bottom: 58px; grid-template-columns: 34px 1fr; gap: 15px; }
   .step-word { font-size: 45px; right: 12px; bottom: 6px; }
   .voices { padding: 72px 16px; }
   .voices-heading { padding: 0 8px; }
