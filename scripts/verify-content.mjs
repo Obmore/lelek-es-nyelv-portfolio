@@ -264,6 +264,7 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
 // E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
 report(built.includes(EMAIL), "built contains the expected contact e-mail");
 report(built.includes("urlap.lelekesnyelv.hu"), "built contains the form Worker host urlap.lelekesnyelv.hu");
+// Regression guard: FormSubmit is no longer used; keep this check.
 report(!built.includes("formsubmit.co"), "built does not contain formsubmit.co");
 report(!built.includes(OLD_EMAIL), "built lacks the old contact e-mail");
 report(
