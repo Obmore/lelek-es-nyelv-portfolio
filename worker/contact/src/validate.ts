@@ -20,11 +20,11 @@ function validEmail(email: string): boolean {
   const parts = email.split('@');
   if (parts.length !== 2) return false;
   const [local, domain] = parts as [string, string];
-  if (!LOCAL_PART.test(local) || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false;
+  if (local.length > 64 || !LOCAL_PART.test(local) || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false;
   const labels = domain.split('.');
   if (labels.length < 2) return false;
   for (const label of labels) {
-    if (!DOMAIN_LABEL.test(label) || label.startsWith('-') || label.endsWith('-')) return false;
+    if (label.length > 63 || !DOMAIN_LABEL.test(label) || label.startsWith('-') || label.endsWith('-')) return false;
   }
   return TLD.test(labels[labels.length - 1]!);
 }

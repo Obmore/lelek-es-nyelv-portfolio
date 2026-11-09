@@ -44,6 +44,16 @@ export function cleanDisplayName(value: string): string {
     .trim();
 }
 
+/** Reply-To address with the domain converted to ASCII (punycode) through the URL API; the mail body keeps the typed address. */
+export function asciiEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  try {
+    return `${email.slice(0, at)}@${new URL(`http://${email.slice(at + 1)}`).hostname}`;
+  } catch {
+    return email;
+  }
+}
+
 const BUDAPEST_TIME = new Intl.DateTimeFormat('hu-HU', {
   timeZone: 'Europe/Budapest',
   year: 'numeric',

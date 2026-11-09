@@ -1,6 +1,6 @@
 import { ALLOWED_ORIGIN, DESTINATION, HONEYPOT, SENDER, SENDER_NAME } from './contract.ts';
 import type { Deps, Env } from './env.ts';
-import { buildHtml, buildSubject, buildText, cleanDisplayName } from './mail.ts';
+import { asciiEmail, buildHtml, buildSubject, buildText, cleanDisplayName } from './mail.ts';
 import { validate } from './validate.ts';
 
 const MAX_BODY_BYTES = 32 * 1024;
@@ -183,7 +183,7 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
         env.EMAIL.send({
           to: DESTINATION,
           from: { email: SENDER, name: SENDER_NAME },
-          replyTo: { email: s.email, name: cleanDisplayName(s.name) },
+          replyTo: { email: asciiEmail(s.email), name: cleanDisplayName(s.name) },
           subject: buildSubject(s.topic, (deps.now ?? Date.now)()),
           text: buildText(s),
           html: buildHtml(s),
@@ -204,15 +204,17 @@ export async function handle(request: Request, env: Env, deps: Deps = {}): Promi
   let routed: Routed;
   try {
     routed = await route(request, env, deps);
-  } catch {
-    // Unexpected failure: still answer JSON, with CORS when the origin is the allowed one. No error details.
+  } catch (error) {
+    // Unexpected failure: still answer JSON, with CORS when the origin is the allowed one.
+    // The log gets a code or the error class name, never the message.
     let cors: Record<string, string> = {};
     try {
       if (request.headers.get('Origin') === ALLOWED_ORIGIN) cors = { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, Vary: 'Origin' };
     } catch {
       // no CORS headers
     }
-    routed = { response: json(500, { success: false, error: 'internal' }, cors), outcome: 'internal' };
+    const code = errorCode(error) ?? (error instanceof Error && /^[A-Za-z]{1,40}$/.test(error.constructor.name) ? error.constructor.name : undefined);
+    routed = { response: json(500, { success: false, error: 'internal' }, cors), outcome: 'internal', code };
   }
   const { response, outcome, code } = routed;
   // The only log line per request: outcome, status and duration. Never a submitted value.

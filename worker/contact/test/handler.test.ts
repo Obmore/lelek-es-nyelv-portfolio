@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handle } from '../src/handler.ts';
 import worker from '../src/index.ts';
+import { validate } from '../src/validate.ts';
 import { ALLOWED_ORIGIN, DESTINATION, FIELDS } from '../src/contract.ts';
 import type { EmailMessage, Env } from '../src/env.ts';
 
@@ -841,7 +842,7 @@ describe('top-level guard', () => {
     expect(h.send).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledTimes(1);
     const line = logSpy.mock.calls[0]![0] as Record<string, unknown>;
-    expect(Object.keys(line).sort()).toEqual(['ms', 'outcome', 'status']);
+    expect(Object.keys(line).sort()).toEqual(['code', 'ms', 'outcome', 'status']);
     expect(line.outcome).toBe('internal');
   });
 
@@ -855,5 +856,73 @@ describe('top-level guard', () => {
     expect(res.status).toBe(500);
     expectNoCors(res);
     expect(await jsonOf(res)).toEqual({ success: false, error: 'internal' });
+  });
+});
+
+describe('validate() reads own keys only', () => {
+  it('rejects an input whose valid fields live only on the prototype', () => {
+    const inherited = Object.create(validBody()) as Record<string, unknown>;
+    expect(Object.keys(inherited)).toEqual([]);
+    expect(validate(inherited)).toEqual({ ok: false, field: FIELDS.topic });
+  });
+
+  it('accepts the same fields as own keys', () => {
+    expect(validate({ ...validBody() }).ok).toBe(true);
+  });
+});
+
+describe('500 guard log code', () => {
+  it('logs the error class name and never the message', async () => {
+    const h = makeEnv();
+    const req = post(validBody());
+    Object.defineProperty(req, 'headers', {
+      value: {
+        get: (name: string): string | null => {
+          if (name.toLowerCase() === 'cf-connecting-ip') throw new TypeError('secret value');
+          return name.toLowerCase() === 'origin' ? ORIGIN : null;
+        },
+      },
+    });
+    const res = await handle(req, h.env);
+    expect(res.status).toBe(500);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(logSpy.mock.calls[0]![0]).toMatchObject({ outcome: 'internal', status: 500, code: 'TypeError' });
+    expect(JSON.stringify(logSpy.mock.calls)).not.toContain('secret value');
+  });
+});
+
+describe('e-mail limits and Reply-To punycode', () => {
+  it('sends Reply-To with an ASCII domain and keeps the typed address in the body', async () => {
+    const h = makeEnv();
+    const res = await handle(post(validBody({ [FIELDS.email]: 'nev@kéz.hu' })), h.env);
+    expect(res.status).toBe(200);
+    const mail = h.sent[0]!;
+    expect(mail.replyTo.email).toBe('nev@xn--kz-bja.hu');
+    expect(mail.replyTo.email.split('@')[1]!.startsWith('xn--')).toBe(true);
+    expect(mail.text).toContain('E-mail: nev@kéz.hu');
+    expect(mail.html).toContain('nev@kéz.hu');
+  });
+
+  it('leaves an ASCII address unchanged (domain lower-cased by the URL API)', async () => {
+    const h = makeEnv();
+    await handle(post(validBody({ [FIELDS.email]: 'Nev.Tag+x@Example.HU' })), h.env);
+    expect(h.sent[0]!.replyTo.email).toBe('Nev.Tag+x@example.hu');
+  });
+
+  it.each([
+    ['65-char local part', `${'a'.repeat(65)}@example.hu`],
+    ['64-char domain label', `a@${'b'.repeat(64)}.hu`],
+  ])('rejects a %s', async (_label, email) => {
+    const h = makeEnv();
+    const res = await handle(post(validBody({ [FIELDS.email]: email })), h.env);
+    expect(res.status).toBe(400);
+    expect(await jsonOf(res)).toEqual({ success: false, error: 'invalid', field: FIELDS.email });
+    expect(h.send).not.toHaveBeenCalled();
+  });
+
+  it('accepts a 64-char local part and a 63-char label', async () => {
+    const h = makeEnv();
+    const res = await handle(post(validBody({ [FIELDS.email]: `${'a'.repeat(64)}@${'b'.repeat(63)}.hu` })), h.env);
+    expect(res.status).toBe(200);
   });
 });
