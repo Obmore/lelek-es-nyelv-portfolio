@@ -460,7 +460,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: grid; grid-template-columns: 1fr auto; gap: 45px; color: var(--paper); background: var(--ink); align-items: start; }
 .footer-brand .brand-mark { color: var(--ink); background: var(--paper); border-color: var(--paper); }
 .footer-brand small { color: rgba(251,248,242,.78); }
-.footer-contact { display: flex; gap: 28px; font-size: 14px; }
+.footer-contact { display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 28px; row-gap: 0; min-width: 0; font-size: 14px; }
 .footer-contact a, .footer-small a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 6px; text-decoration-color: rgba(251,248,242,.5); }
 .footer-small { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-top: 25px; border-top: 1px solid rgba(251,248,242,.18); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: rgba(251,248,242,.78); }
 
