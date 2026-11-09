@@ -227,7 +227,7 @@ export const privacySections: PrivacySection[] = [
     title: 'Kik férnek hozzá az adatokhoz?',
     paragraphs: ['Az üzenetedet és az oldalt a következő szolgáltatók segítségével működtetem:'],
     items: [
-      'Cloudflare (cloudflare.com): az oldal domainnevének (DNS) szolgáltatója. A Cloudflare szerverén futó program fogadja és ellenőrzi az űrlapot, majd e-mailben továbbítja a postafiókomba. Az üzenetedet nem tárolja. A visszaélések kiszűréséhez rövid ideig felhasználja az IP-címedet, a levélküldésről pedig technikai naplót vezet (időpont, címzett, tárgy, amely a megkeresés témáját és időpontját tartalmazza).',
+      'Cloudflare (cloudflare.com): az oldal domainnevének (DNS) szolgáltatója. A Cloudflare szerverén futó program fogadja és ellenőrzi az űrlapot, majd e-mailben továbbítja a postafiókomba. Az üzeneted tartalmát nem tárolja, csak továbbítja. A visszaélések kiszűréséhez rövid ideig felhasználja az IP-címedet, a levélküldésről pedig technikai naplót vezet (időpont, címzett, tárgy, amely a megkeresés témáját és időpontját tartalmazza), amelynek megőrzési idejét a Cloudflare szabályozza.',
       'Google (Gmail): az a levelezési fiók, amelyben az üzeneted megérkezik és tárolódik.',
       'GitHub (GitHub Pages): az oldal tárhelye. A kiszolgálói naplók technikai adatokat, például IP-címet rögzíthetnek.',
     ],

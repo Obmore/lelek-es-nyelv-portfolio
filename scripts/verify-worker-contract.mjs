@@ -65,7 +65,7 @@ const workerSender = stringConst(contract, "SENDER", "contract.ts");
 const limitsMatch = contract.match(/export const LIMITS\s*=\s*\{([^}]*)\}/);
 if (!limitsMatch) broken("LIMITS in contract.ts");
 const workerLimits = Object.fromEntries([...limitsMatch[1].matchAll(/(\w+)\s*:\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]));
-const workerDomain = wrangler.match(/"pattern"\s*:\s*"([^"]*)"/)?.[1];
+const workerDomain = wrangler.match(/"routes"\s*:\s*\[\s*\{[^}]*"pattern"\s*:\s*"([^"]*)"/)?.[1];
 if (!workerDomain) broken("the custom-domain pattern in wrangler.jsonc");
 
 // Site side.

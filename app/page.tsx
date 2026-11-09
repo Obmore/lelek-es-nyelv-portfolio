@@ -232,22 +232,29 @@ export default function Home() {
     const timeout = window.setTimeout(() => controller.abort(), FORM_TIMEOUT_MS);
 
     try {
-      const payload = Object.fromEntries(new FormData(form).entries());
+      // FormData gives textarea values with CRLF; the Worker counts characters, so send plain LF.
+      const payload = Object.fromEntries(
+        [...new FormData(form).entries()].map(([key, value]) => [
+          key,
+          typeof value === 'string' ? value.replace(/\r\n?/g, '\n') : value,
+        ]),
+      );
       const response = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      const result = await response.json() as { success?: boolean | string; error?: string };
+      const result = await response.json().catch(() => null) as { success?: boolean } | null;
 
-      // The Worker answers 504 send_timeout when it cannot tell whether the mail went out: same as a client-side abort.
-      if (response.status === 504 && result.error === 'send_timeout') {
+      // A 504 (the Worker's send_timeout) or any other 5xx without a JSON body (an edge error page) means
+      // the mail may still have been delivered: same as a client-side abort.
+      if (response.status === 504 || (response.status >= 500 && result === null)) {
         setFormStatus('uncertain');
         return;
       }
 
-      if (!response.ok || result.success === false || result.success === 'false') {
+      if (response.status !== 200 || result?.success !== true) {
         throw new Error('A küldés sikertelen.');
       }
 
@@ -567,7 +574,7 @@ export default function Home() {
               </label>
               <label className="field">
                 <span>Telefonszámod <i>{phoneRequired ? '(kötelező)' : '(opcionális)'}</i></span>
-                <input type="tel" name="Telefonszám" placeholder="+36 30 123 4567" autoComplete="tel" maxLength={30} pattern="(?=(?:\D*\d){6})[0-9 +\-\(\)\/.]{6,30}" required={phoneRequired} />
+                <input type="tel" name="Telefonszám" placeholder="+36 30 123 4567" autoComplete="tel" maxLength={30} title="Számjegyek, szóköz és a + - ( ) / . jelek, legalább 6 számjegy." pattern="(?=(?:\D*\d){6})[0-9 +\-\(\)\/.]{6,30}" required={phoneRequired} />
               </label>
               <label className="field message-field">
                 <span>Üzeneted</span>

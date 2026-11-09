@@ -434,7 +434,7 @@ if (privacyHtml !== null) {
   const h1s = [...privacyHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map((m) => text(m[1]));
   check(h1s.length === 1 && h1s[0] === "Adatkezelési tájékoztató", "privacy page has one <h1> Adatkezelési tájékoztató", JSON.stringify(h1s));
   check(!/formsubmit/i.test(t), "privacy page does not mention formsubmit");
-  for (const needle of ["Juhász Nagy Anna", "Cloudflare (cloudflare.com)", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
+  for (const needle of ["Juhász Nagy Anna", "Cloudflare (cloudflare.com)", "megőrzési idejét a Cloudflare szabályozza", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
     check(has(t, needle), `privacy page contains "${needle}"`);
   }
   check(has(t, "NAIH") || has(t, "Nemzeti Adatvédelmi és Információszabadság Hatóság"), "privacy page names NAIH");
@@ -601,6 +601,7 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
     for (const [name, max] of [["Név", "100"], ["email", "254"], ["Telefonszám", "30"], ["Üzenet", "5000"]]) {
       check(attr(control(name), "maxLength") === max, `${name} has maxLength ${max}`, String(attr(control(name), "maxLength")));
     }
+    check(attr(control("Telefonszám"), "title") === "Számjegyek, szóköz és a + - ( ) / . jelek, legalább 6 számjegy.", "Telefonszám has the Hungarian validation title", String(attr(control("Telefonszám"), "title")));
     const PHONE_PATTERN = String.raw`(?=(?:\D*\d){6})[0-9 +\-\(\)\/.]{6,30}`;
     check(attr(control("Telefonszám"), "pattern") === PHONE_PATTERN, "Telefonszám has the v-flag-safe phone pattern", String(attr(control("Telefonszám"), "pattern")));
     const fieldOrder = [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => attr(m[0], "name"));
