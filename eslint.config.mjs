@@ -7,7 +7,7 @@ import react from 'eslint-plugin-react';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default defineConfig([
-  globalIgnores(['dist-github-pages/**', '.claude/**', '.ui-check/**']),
+  globalIgnores(['dist-github-pages/**', '.claude/**', '.ui-check/**', 'worker/**']),
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,
