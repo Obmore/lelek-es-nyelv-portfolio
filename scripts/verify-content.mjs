@@ -285,6 +285,66 @@ for (const stem of ["anna-portrait-480.webp", "anna-portrait-800.webp", "anna-po
   report(Boolean(name) && built.includes(name), `built HTML/JS references ${stem}`);
 }
 
+// SEO files, icons, structured data and font preloads
+{
+  const read = (rel) => (existsSync(join(distDir, rel)) ? readFileSync(join(distDir, rel), "utf8") : "");
+  const robots = read("robots.txt");
+  report(/^User-agent: \*$/m.test(robots) && /^Allow: \/$/m.test(robots), "robots.txt allows all crawlers");
+  report(robots.includes(`Sitemap: ${SITE_URL}sitemap.xml`), "robots.txt has the Sitemap line");
+
+  const sitemap = read("sitemap.xml");
+  const locs = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]);
+  report(
+    sitemap.startsWith("<?xml") && /<urlset\b[^>]*>[\s\S]*<\/urlset>\s*$/.test(sitemap) && (sitemap.match(/<url>/g) ?? []).length === (sitemap.match(/<\/url>/g) ?? []).length,
+    "sitemap.xml is well-formed",
+  );
+  report(locs.length === 2 && locs[0] === SITE_URL && locs[1] === `${SITE_URL}adatkezeles/`, "sitemap.xml lists exactly the home page and the privacy page", `got ${JSON.stringify(locs)}`);
+
+  const nf = read("404.html");
+  report(/<html[^>]*\blang="hu"/.test(nf), "404.html is lang hu");
+  report(/<meta\s+name="robots"\s+content="noindex"/.test(nf), "404.html is noindex");
+  report(nf.includes(`href="${SITE_URL}"`) && nf.includes(`href="${SITE_URL}#kapcsolat"`), "404.html links to the home page and the contact section by absolute URL");
+  report(!nf.includes("%SITE_URL%") && !new RegExp(`(?:src|href)="https?://(?!${new URL(SITE_URL).host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`).test(nf), "404.html has no token and no external requests");
+
+  const pngPath = join(distDir, "apple-touch-icon.png");
+  let png = "missing";
+  if (existsSync(pngPath)) {
+    const b = readFileSync(pngPath);
+    png = b.length >= 24 && b.subarray(1, 4).toString("latin1") === "PNG" ? `${b.readUInt32BE(16)}x${b.readUInt32BE(20)}` : "not a PNG";
+  }
+  report(png === "180x180", "apple-touch-icon.png is a 180x180 PNG", `got ${png}`);
+  const icoPath = join(distDir, "favicon.ico");
+  const ico = existsSync(icoPath) ? readFileSync(icoPath) : Buffer.alloc(0);
+  report(ico.length > 22 && ico.readUInt16LE(0) === 0 && ico.readUInt16LE(2) === 1 && ico.readUInt16LE(4) >= 2, "favicon.ico is an ICO with at least two sizes");
+
+  // JSON-LD on the home page: parses, and its prices equal the content prices.
+  const home = read("index.html");
+  const ldRaw = home.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+  let ld = null;
+  try { ld = JSON.parse(ldRaw ?? ""); } catch { /* reported below */ }
+  report(ld?.["@type"] === "ProfessionalService" && ld.url === SITE_URL && ld.image === `${SITE_URL}og-image.png`, "index.html has parseable ProfessionalService JSON-LD with site url and image");
+  const priceOf = (name) => Number((source.match(new RegExp(`${name}\\s*=\\s*'([^']*)'`))?.[1] ?? "").split("Ft")[0].replace(/\D/g, ""));
+  const offers = (ld?.makesOffer ?? []).map((o) => [o.itemOffered?.name, o.priceSpecification?.price, o.priceSpecification?.priceCurrency]);
+  const nameOf = (priceConst) => source.match(new RegExp(`name: '([^']*)',(?:(?!name: ')[^])*?price: ${priceConst}`))?.[1];
+  const expected = [[nameOf("PRICE_MENTAL"), priceOf("PRICE_MENTAL"), "HUF"], [nameOf("PRICE_ENGLISH"), priceOf("PRICE_ENGLISH"), "HUF"]];
+  report(expected.every((e) => e[0] && e[1] > 0) && JSON.stringify(offers) === JSON.stringify(expected), "JSON-LD offers match the content names and prices", `got ${JSON.stringify(offers)} want ${JSON.stringify(expected)}`);
+  report(!/[a-z0-9.-]+@[a-z0-9-]+[.][a-z]+|tel:|openingHours|aggregateRating|address/i.test(ldRaw ?? "x"), "JSON-LD has no e-mail, phone, address, hours or rating");
+
+  // Font preloads: exactly the two critical fonts, pointing at files that exist.
+  for (const [label, rel] of [["index.html", "index.html"], ["adatkezeles/index.html", "adatkezeles/index.html"]]) {
+    const html = read(rel);
+    const tags = [...html.matchAll(/<link\b[^>]*rel="preload"[^>]*>/gi)].map((m) => m[0]).filter((t) => /as="font"/.test(t));
+    const hrefs = tags.map((t) => t.match(/href="([^"]*)"/)?.[1] ?? "");
+    const ok =
+      tags.length === 2 &&
+      tags.every((t) => /type="font\/woff2"/.test(t) && /\bcrossorigin\b/.test(t)) &&
+      hrefs.some((h) => /fraunces-latin-wght-normal-/.test(h)) &&
+      hrefs.some((h) => /figtree-latin-wght-normal-/.test(h)) &&
+      hrefs.every((h) => existsSync(join(distDir, h.replace(/^\//, ""))));
+    report(ok, `${label} preloads exactly the two latin wght fonts and the files exist`, `got ${JSON.stringify(hrefs)}`);
+  }
+}
+
 if (srcFiles.length === 0) report(false, "app source readable", `no .ts/.tsx under ${appDir}`);
 
 console.log(`verify-content: ${pass} passed, ${fail} failed`);
