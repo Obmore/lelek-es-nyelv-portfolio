@@ -489,13 +489,19 @@ for (const [label, markup] of [["home page", html], ["privacy page", privacyHtml
   check(Boolean(target) && attr(target, "tabindex") === "-1", `${label}: the skip link target is <main id> with tabindex="-1"`, String(target));
   check(Boolean(first) && markup.indexOf(first) < markup.indexOf("<header"), `${label}: the skip link comes before the header`);
   const brands = elements(markup, "a", /class="[^"]*\bbrand\b/);
-  const squash = (v) => v.toLowerCase().replace(/&amp;/g, "&").replace(/[^\p{L}&]+/gu, "");
-  const results = brands.map((brand) => {
-    const brandText = text(brand.inner.replace(/<span\b[^>]*\bbrand-mark\b[^>]*>.*?<\/span>/, ""));
-    const brandName = attr(brand.open, "aria-label") ?? "";
-    return { brandText, brandName, ok: brandText !== "" && squash(brandName).includes(squash(brandText)) };
+  const expectedPurpose = label === "home page" ? [", főoldal", ", vissza az oldal tetejére"] : [", vissza a főoldalra", ", vissza a főoldalra"];
+  const results = brands.map((brand, i) => {
+    const markOk = /<span[^>]*brand-mark[^>]*aria-hidden="true"[^>]*>/.test(brand.inner);
+    const withoutMark = brand.inner.replace(/<span[^>]*brand-mark[^>]*>.*?<\/span>/, "");
+    const srMatch = withoutMark.match(/<span[^>]*sr-only[^>]*>(.*?)<\/span>/);
+    const purpose = srMatch ? decode(srMatch[1]) : "";
+    const name = decode(withoutMark.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
+    const visible = decode(withoutMark.replace(srMatch ? srMatch[0] : "", "").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
+    const noLabel = attr(brand.open, "aria-label") === null;
+    const ok = noLabel && markOk && visible === "ANNAlélek & nyelv" && purpose === expectedPurpose[i] && name.startsWith("ANNA") && name.endsWith(expectedPurpose[i]);
+    return { i, noLabel, markOk, visible, purpose, name, ok };
   });
-  check(brands.length >= 2 && results.every((r) => r.ok), `${label}: every brand link (header and footer, ${brands.length}) has an accessible name containing its visible text (WCAG 2.5.3)`, JSON.stringify(results));
+  check(brands.length === 2 && results.every((r) => r.ok), `${label}: both brand links (header, footer) have no aria-label, an aria-hidden mark, and a name that starts with the visible text and ends with the sr-only purpose (WCAG 2.5.3)`, JSON.stringify(results));
 }
 {
   const form = elements(html, "form", /^<form/)[0];

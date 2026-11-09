@@ -7,10 +7,9 @@ export default function SiteFooter({ home = false }: { home?: boolean }) {
       <a
         className="brand footer-brand"
         href={home ? '#top' : '../'}
-        aria-label={home ? 'Anna, Lélek & Nyelv, vissza az oldal tetejére' : 'Anna, Lélek & Nyelv, vissza a főoldalra'}
       >
         <span className="brand-mark" aria-hidden="true">A</span>
-        <span><strong>ANNA</strong><small>lélek &amp; nyelv</small></span>
+        <span><strong>ANNA</strong><small>lélek &amp; nyelv</small><span className="sr-only">{home ? ', vissza az oldal tetejére' : ', vissza a főoldalra'}</span></span>
       </a>
       <div className="footer-contact">
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>

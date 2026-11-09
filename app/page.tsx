@@ -262,11 +262,12 @@ export default function Home() {
       <div className="progress-bar" ref={progressRef} aria-hidden="true" />
 
       <header className="site-header" ref={headerRef}>
-        <a className="brand" href="#top" aria-label="Anna, Lélek & Nyelv, főoldal" onClick={goTo('top')}>
+        <a className="brand" href="#top" onClick={goTo('top')}>
           <span className="brand-mark" aria-hidden="true">A</span>
           <span>
             <strong>ANNA</strong>
             <small>lélek &amp; nyelv</small>
+            <span className="sr-only">, főoldal</span>
           </span>
         </a>
 
