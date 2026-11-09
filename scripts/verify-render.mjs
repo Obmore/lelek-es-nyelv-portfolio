@@ -21,6 +21,8 @@ const esbuildOptions = (outfile) => ({
   target: "node22",
   jsx: "automatic",
   logLevel: "silent",
+  // Portrait images are imported by the page; the server render only needs their URLs.
+  loader: { ".webp": "file", ".jpg": "file" },
   // three.js and R3F live in the lazy scene chunk, which never renders on the server.
   external: ["react", "react-dom", "react-dom/*", "react/*", "three", "three/*", "@react-three/fiber"],
 });
@@ -308,6 +310,21 @@ for (const item of c.testimonials) {
     for (const gone of REMOVED) check(countOf(t, gone) === 0, `about lacks removed sentence "${gone.slice(0, 24)}"`);
     const stamps = elements(about.inner, "span", /class="[^"]*\bstamp\b/).map((el) => text(el.inner));
     check(stamps.length === 1 && stamps[0] === "ELTE · SOTE", "stamp text is ELTE · SOTE", JSON.stringify(stamps));
+    const shapes = elements(about.inner, "div", /class="[^"]*\bportrait-shape\b/);
+    check(shapes.length === 1, "about has one .portrait-shape", `count ${shapes.length}`);
+    const shape = shapes[0]?.inner ?? "";
+    const imgs = [...shape.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
+    check(imgs.length === 1, "portrait-shape holds exactly one <img>", `count ${imgs.length}`);
+    const img = imgs[0] ?? "";
+    check(typeof c.ABOUT_PORTRAIT_ALT === "string" && c.ABOUT_PORTRAIT_ALT.length > 0 && attr(img, "alt") === c.ABOUT_PORTRAIT_ALT, "portrait alt equals ABOUT_PORTRAIT_ALT", JSON.stringify(attr(img, "alt")));
+    check(attr(img, "width") === "800" && attr(img, "height") === "976", "portrait img is width 800, height 976", `${attr(img, "width")}x${attr(img, "height")}`);
+    const descriptors = (value) => (value ?? "").split(",").map((part) => part.trim().split(/\s+/)).filter((p) => p.length === 2);
+    const jpgSet = descriptors(attr(img, "srcSet"));
+    check(["480w", "800w"].every((w) => jpgSet.some(([url, d]) => d === w && /\.jpg(\?|$)/.test(url))) && jpgSet.length === 2, "portrait img srcset is a JPEG 480w + 800w pair", JSON.stringify(attr(img, "srcSet")));
+    const sources = [...shape.matchAll(/<source\b[^>]*>/g)].map((m) => m[0]).filter((o) => attr(o, "type") === "image/webp");
+    const webpSet = descriptors(attr(sources[0] ?? "", "srcSet"));
+    check(sources.length === 1 && ["480w", "800w"].every((w) => webpSet.some(([url, d]) => d === w && /\.webp(\?|$)/.test(url))) && webpSet.length === 2, "portrait <source type=image/webp> srcset has 480w + 800w", JSON.stringify(attr(sources[0] ?? "", "srcSet")));
+    check(!/portrait-initial/.test(about.inner), "portrait-initial no longer renders");
   }
 }
 

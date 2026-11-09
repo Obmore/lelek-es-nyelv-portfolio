@@ -267,6 +267,19 @@ report(built.includes("https://formsubmit.co/"), "built contains the form endpoi
 report(built.includes("https://formsubmit.co/ajax/"), "built contains the AJAX endpoint prefix https://formsubmit.co/ajax/");
 report(!built.includes(OLD_EMAIL), "built lacks the old contact e-mail");
 
+// About portrait: the four image files are emitted by the build and referenced from the built HTML/JS (hashed names are fine).
+for (const stem of ["anna-portrait-480.webp", "anna-portrait-800.webp", "anna-portrait-480.jpg", "anna-portrait-800.jpg"]) {
+  const dot = stem.lastIndexOf(".");
+  const [base, ext] = [stem.slice(0, dot), stem.slice(dot)];
+  const emitted = walk(distDir, [ext]).filter((f) => {
+    const n = f.split(/[/\\]/).pop();
+    return n.startsWith(`${base}-`) && n.endsWith(ext) && !n.slice(base.length + 1, -ext.length).includes(".");
+  });
+  report(emitted.length === 1 && statSync(emitted[0]).size > 1000, `build emits ${stem}`, `found ${emitted.length}`);
+  const name = emitted[0] ? emitted[0].split(/[/\\]/).pop() : "";
+  report(Boolean(name) && built.includes(name), `built HTML/JS references ${stem}`);
+}
+
 if (srcFiles.length === 0) report(false, "app source readable", `no .ts/.tsx under ${appDir}`);
 
 console.log(`verify-content: ${pass} passed, ${fail} failed`);
