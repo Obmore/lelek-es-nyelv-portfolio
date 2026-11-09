@@ -8,11 +8,12 @@ export default function PrivacyPage() {
     <>
       <a className="skip-link" href="#main">Ugrás a tartalomra</a>
       <header className="site-header privacy-header">
-        <a className="brand" href="../" aria-label="Anna, Lélek & Nyelv, vissza a főoldalra">
+        <a className="brand" href="../">
           <span className="brand-mark" aria-hidden="true">A</span>
           <span>
             <strong>ANNA</strong>
             <small>lélek &amp; nyelv</small>
+            <span className="sr-only">, vissza a főoldalra</span>
           </span>
         </a>
         <a className="header-cta privacy-back" href="../">
