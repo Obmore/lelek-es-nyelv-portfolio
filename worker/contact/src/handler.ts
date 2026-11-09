@@ -19,7 +19,8 @@ type Outcome =
   | 'send_timeout'
   | 'method'
   | 'health'
-  | 'preflight';
+  | 'preflight'
+  | 'internal';
 
 interface Routed {
   response: Response;
@@ -90,7 +91,11 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
   const forbidden: Routed = { response: json(403, { success: false, error: 'forbidden' }), outcome: 'forbidden' };
 
   if (request.method === 'GET' && url.pathname === '/health') {
-    return { response: json(200, { ok: true }), outcome: 'health' };
+    const ready =
+      typeof env.EMAIL?.send === 'function' &&
+      typeof env.RL_IP?.limit === 'function' &&
+      typeof env.RL_GLOBAL?.limit === 'function';
+    return { response: json(ready ? 200 : 503, { ok: ready }), outcome: 'health' };
   }
 
   if (request.method === 'OPTIONS' && url.pathname === '/') {
@@ -118,20 +123,18 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
     code,
   });
 
-  // Rate limits run before the body is read. If the limiter itself throws, the request goes on.
+  // The per-IP limit runs before the body is read. If the limiter itself throws, the request goes on.
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
   try {
-    const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
-    const byIp = await env.RL_IP.limit({ key: ip });
-    const overall = byIp.success ? await env.RL_GLOBAL.limit({ key: 'global' }) : byIp;
-    if (!byIp.success || !overall.success) {
+    if (!(await env.RL_IP.limit({ key: ip })).success) {
       return reply(429, { success: false, error: 'rate_limited' }, 'rate_limited');
     }
   } catch {
     // fail open
   }
 
-  const contentType = request.headers.get('Content-Type') ?? '';
-  if (!contentType.toLowerCase().startsWith('application/json')) {
+  const mediaType = (request.headers.get('Content-Type') ?? '').split(';')[0]!.trim().toLowerCase();
+  if (mediaType !== 'application/json') {
     return reply(415, { success: false, error: 'unsupported_type' }, 'unsupported_type');
   }
 
@@ -165,6 +168,15 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
   }
   const s = result.value;
 
+  // The global budget counts only submissions that would be sent. If the limiter throws, the send goes on.
+  try {
+    if (!(await env.RL_GLOBAL.limit({ key: 'global' })).success) {
+      return reply(429, { success: false, error: 'rate_limited' }, 'rate_limited');
+    }
+  } catch {
+    // fail open
+  }
+
   try {
     await sendWithTimeout(
       () =>
@@ -189,7 +201,20 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
 export async function handle(request: Request, env: Env, deps: Deps = {}): Promise<Response> {
   const now = deps.now ?? Date.now;
   const started = now();
-  const { response, outcome, code } = await route(request, env, deps);
+  let routed: Routed;
+  try {
+    routed = await route(request, env, deps);
+  } catch {
+    // Unexpected failure: still answer JSON, with CORS when the origin is the allowed one. No error details.
+    let cors: Record<string, string> = {};
+    try {
+      if (request.headers.get('Origin') === ALLOWED_ORIGIN) cors = { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, Vary: 'Origin' };
+    } catch {
+      // no CORS headers
+    }
+    routed = { response: json(500, { success: false, error: 'internal' }, cors), outcome: 'internal' };
+  }
+  const { response, outcome, code } = routed;
   // The only log line per request: outcome, status and duration. Never a submitted value.
   const line: Record<string, unknown> = { outcome, status: response.status, ms: now() - started };
   if (code) line.code = code;

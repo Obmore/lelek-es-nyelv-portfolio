@@ -30,9 +30,18 @@ export function escapeHtml(value: string): string {
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/g;
 
-/** Display name for Reply-To: no CR/LF or other control characters. */
+/** The visitor's name without control characters (used for validation and the mail body). */
+export function stripControl(value: string): string {
+  return value.replace(CONTROL_CHARS, ' ').trim();
+}
+
+/** Reply-To display name: control characters and the address/quoting characters <>"@,;:\ become spaces. */
 export function cleanDisplayName(value: string): string {
-  return value.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim();
+  return value
+    .replace(CONTROL_CHARS, ' ')
+    .replace(/[<>"@,;:\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 const BUDAPEST_TIME = new Intl.DateTimeFormat('hu-HU', {

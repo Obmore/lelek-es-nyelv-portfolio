@@ -224,7 +224,8 @@ describe('POST /', () => {
     expect(mail.to).toBe(DESTINATION);
     expect(mail.from).toEqual({ email: 'urlap@lelekesnyelv.hu', name: 'Lélek & Nyelv űrlap' });
     expect(mail.replyTo.email).toBe(SECRET_EMAIL);
-    expect(mail.replyTo.name).toBe(SECRET_NAME);
+    expect(mail.replyTo.name).toBe('Éva Őri Zs b &');
+    expect(mail.text).toContain(`Név: ${SECRET_NAME}`);
     expect(mail.subject).toMatch(/^Új megkeresés a Lélek & Nyelv oldalról: Angolóra \(\d{4}\.\d{2}\.\d{2}\. \d{2}:\d{2}\)$/);
     expect(Object.keys(mail).sort()).toEqual(['from', 'html', 'replyTo', 'subject', 'text', 'to']);
   });
@@ -285,7 +286,7 @@ describe('POST /', () => {
     await handle(post(validBody({ [FIELDS.name]: 'Anna\r\nBcc: x@evil.example\u0000\u0007 Kiss' })), h.env);
     const name = h.sent[0]!.replyTo.name!;
     expect([...name].some((c) => c.charCodeAt(0) < 32)).toBe(false);
-    expect(name).toBe('Anna Bcc: x@evil.example Kiss');
+    expect(name).toBe('Anna Bcc x evil.example Kiss');
   });
 
   it('accepts a missing phone when the preference is not Telefonon', async () => {
@@ -440,15 +441,39 @@ describe('POST /', () => {
       expect(h.send).not.toHaveBeenCalled();
     });
 
-    it('answers 429 when the global limit is exceeded, before reading the body', async () => {
+    it('answers 429 for a valid submission over the global limit, without sending', async () => {
       const h = makeEnv({ global: false });
-      const req = post(validBody());
-      const res = await handle(req, h.env);
+      const res = await handle(post(validBody()), h.env);
       expect(res.status).toBe(429);
+      expectCors(res);
+      expect(await jsonOf(res)).toEqual({ success: false, error: 'rate_limited' });
       expect(h.rlIp).toHaveBeenCalledTimes(1);
       expect(h.rlGlobal).toHaveBeenCalledTimes(1);
-      expect(req.bodyUsed).toBe(false);
       expect(h.send).not.toHaveBeenCalled();
+    });
+
+    it('does not spend the global budget on invalid, honeypot or rejected requests', async () => {
+      const requests = [
+        post(validBody({ [FIELDS.consent]: 'nem' })),
+        post(validBody({ _honey: 'bot' })),
+        post('{oops'),
+        post('x', { 'Content-Type': 'text/plain' }),
+        post(validBody(), { Origin: 'https://evil.example' }),
+      ];
+      for (const req of requests) {
+        const h = makeEnv();
+        await handle(req, h.env);
+        expect(h.rlGlobal).not.toHaveBeenCalled();
+      }
+    });
+
+    it('still sends when a limiter throws (deliberate fail-open)', async () => {
+      const h = makeEnv();
+      h.rlIp.mockRejectedValue(new Error('limiter down'));
+      h.rlGlobal.mockRejectedValue(new Error('limiter down'));
+      const res = await handle(post(validBody()), h.env);
+      expect(res.status).toBe(200);
+      expect(h.send).toHaveBeenCalledTimes(1);
     });
 
     it('rate limits before the content type and honeypot checks', async () => {
@@ -484,6 +509,21 @@ describe('POST /', () => {
       ['phone required for Telefonon', { [FIELDS.pref]: 'Telefonon', [FIELDS.phone]: '  ' }, FIELDS.phone],
       ['phone missing for Telefonon', { [FIELDS.pref]: 'Telefonon', [FIELDS.phone]: undefined }, FIELDS.phone],
       ['phone with letters', { [FIELDS.phone]: '06 30 abc' }, FIELDS.phone],
+      ['phone with too few digits', { [FIELDS.phone]: '12-34' }, FIELDS.phone],
+      ['phone without digits', { [FIELDS.phone]: 'nincs' }, FIELDS.phone],
+      ['name of only a control char', { [FIELDS.name]: '\u0001' }, FIELDS.name],
+      ['name without letters or digits', { [FIELDS.name]: '<>-- ,' }, FIELDS.name],
+      ['email with double dot in domain', { [FIELDS.email]: 'a@b..hu' }, FIELDS.email],
+      ['email with quoted local part', { [FIELDS.email]: '"a"@b.hu' }, FIELDS.email],
+      ['email with parentheses', { [FIELDS.email]: 'a(b)@c.hu' }, FIELDS.email],
+      ['email with a dash-leading label', { [FIELDS.email]: 'a@-b.hu' }, FIELDS.email],
+      ['email with a dash-trailing label', { [FIELDS.email]: 'a@b-.hu' }, FIELDS.email],
+      ['email with leading dot', { [FIELDS.email]: '.a@b.hu' }, FIELDS.email],
+      ['email with trailing dot in local part', { [FIELDS.email]: 'a.@b.hu' }, FIELDS.email],
+      ['email with consecutive dots in local part', { [FIELDS.email]: 'a..b@c.hu' }, FIELDS.email],
+      ['email with a one-letter TLD', { [FIELDS.email]: 'a@b.h' }, FIELDS.email],
+      ['email with a numeric TLD', { [FIELDS.email]: 'a@b.12' }, FIELDS.email],
+      ['email with an empty label', { [FIELDS.email]: 'a@.hu' }, FIELDS.email],
       ['phone over 30 chars', { [FIELDS.phone]: '1'.repeat(31) }, FIELDS.phone],
       ['non-string phone', { [FIELDS.phone]: 123456 }, FIELDS.phone],
       ['empty message', { [FIELDS.message]: ' \n ' }, FIELDS.message],
@@ -702,5 +742,118 @@ describe('default export', () => {
     const sent = await worker.fetch(post(validBody()), h.env);
     expect(sent.status).toBe(200);
     expect(h.send).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('accepted values', () => {
+  it.each([
+    [FIELDS.phone, '06-30/123-4567'],
+    [FIELDS.phone, '+36 30 123.4567'],
+    [FIELDS.email, 'nev+tag@sub.example.hu'],
+    [FIELDS.email, 'nev@kéz.hu'],
+    [FIELDS.email, "o'neil_x.y@example.co.uk"],
+    [FIELDS.name, 'Kiss Ödön-Béla'],
+    [FIELDS.name, '42'],
+  ])('accepts %s = %s', async (field, value) => {
+    const h = makeEnv();
+    const res = await handle(post(validBody({ [field as string]: value })), h.env);
+    expect(res.status).toBe(200);
+    expect(h.send).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('display name', () => {
+  it('drops <, >, @, quotes, commas, colons and backslashes from the Reply-To name', async () => {
+    const h = makeEnv();
+    await handle(post(validBody({ [FIELDS.name]: 'Anna <anna@bank.hu>' })), h.env);
+    const name = h.sent[0]!.replyTo.name!;
+    expect(name).toBe('Anna anna bank.hu');
+    for (const ch of ['<', '>', '@', '"', ',', ';', ':', '\\']) expect(name).not.toContain(ch);
+    expect(h.sent[0]!.replyTo.email).toBe(SECRET_EMAIL);
+  });
+
+  it('uses the control-free name in the mail body', async () => {
+    const h = makeEnv();
+    await handle(post(validBody({ [FIELDS.name]: 'Anna\u0001Kiss' })), h.env);
+    expect(h.sent[0]!.text).toContain('Név: Anna Kiss');
+  });
+});
+
+describe('content type', () => {
+  it('rejects application/jsonfoo with 415', async () => {
+    const h = makeEnv();
+    const res = await handle(post(validBody(), { 'Content-Type': 'application/jsonfoo' }), h.env);
+    expect(res.status).toBe(415);
+    expect(h.send).not.toHaveBeenCalled();
+  });
+
+  it('accepts a parameter and any letter case', async () => {
+    const h = makeEnv();
+    const res = await handle(post(validBody(), { 'Content-Type': ' Application/JSON ; charset=utf-8' }), h.env);
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('prototype keys', () => {
+  it('ignores an own __proto__ key in the body', async () => {
+    const h = makeEnv();
+    const raw = JSON.stringify(validBody()).replace('{', '{"__proto__":{"polluted":true,"Név":"x"},');
+    const res = await handle(post(raw), h.env);
+    expect(res.status).toBe(200);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(h.sent[0]!.text).toContain(`Név: ${SECRET_NAME}`);
+  });
+});
+
+describe('GET /health readiness', () => {
+  it('answers 503 {"ok":false} when a binding is missing', async () => {
+    const h = makeEnv();
+    for (const broken of [{ ...h.env, EMAIL: undefined }, { ...h.env, RL_IP: {} }, { ...h.env, RL_GLOBAL: undefined }]) {
+      const res = await handle(new Request('https://urlap.lelekesnyelv.hu/health'), broken as unknown as Env);
+      expect(res.status).toBe(503);
+      expectJson(res);
+      expect(await jsonOf(res)).toEqual({ ok: false });
+    }
+    expect(h.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('top-level guard', () => {
+  function throwingIp(request: Request): Request {
+    const real = request.headers;
+    const headers = {
+      get: (name: string): string | null => {
+        if (name.toLowerCase() === 'cf-connecting-ip') throw new Error('boom');
+        return real.get(name);
+      },
+    };
+    Object.defineProperty(request, 'headers', { value: headers });
+    return request;
+  }
+
+  it('answers 500 internal with CORS headers for the allowed origin and logs only the outcome', async () => {
+    const h = makeEnv();
+    const res = await handle(throwingIp(post(validBody())), h.env);
+    expect(res.status).toBe(500);
+    expectJson(res);
+    expectCors(res);
+    expect(await jsonOf(res)).toEqual({ success: false, error: 'internal' });
+    expect(h.send).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const line = logSpy.mock.calls[0]![0] as Record<string, unknown>;
+    expect(Object.keys(line).sort()).toEqual(['ms', 'outcome', 'status']);
+    expect(line.outcome).toBe('internal');
+  });
+
+  it('answers 500 internal without CORS headers when a binding accessor throws on /health', async () => {
+    const env = {
+      get EMAIL(): never {
+        throw new Error('boom');
+      },
+    } as unknown as Env;
+    const res = await handle(new Request('https://urlap.lelekesnyelv.hu/health'), env);
+    expect(res.status).toBe(500);
+    expectNoCors(res);
+    expect(await jsonOf(res)).toEqual({ success: false, error: 'internal' });
   });
 });
