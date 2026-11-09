@@ -266,6 +266,10 @@ report(built.includes(EMAIL), "built contains the expected contact e-mail");
 report(built.includes("https://formsubmit.co/"), "built contains the form endpoint prefix https://formsubmit.co/");
 report(built.includes("https://formsubmit.co/ajax/"), "built contains the AJAX endpoint prefix https://formsubmit.co/ajax/");
 report(!built.includes(OLD_EMAIL), "built lacks the old contact e-mail");
+report(
+  /\.step-word\s*::?before\s*\{[^}]*content:\s*attr\(\s*data-word\s*\)/.test(built),
+  "built CSS renders the step word via .step-word::before { content: attr(data-word) }",
+);
 
 if (srcFiles.length === 0) report(false, "app source readable", `no .ts/.tsx under ${appDir}`);
 
