@@ -311,6 +311,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .step-number { align-self: start; padding-top: 53px; font: italic 400 20px var(--font-serif); color: var(--accent-text); }
 .steps h3 { margin: 0 0 13px; font: 400 34px var(--font-serif); }
 .steps p { max-width: 480px; margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink-soft); }
+.step-word::before { content: attr(data-word); }
 .steps article > div { position: relative; z-index: 1; }
 /* Decorative watermark: always fully inside the article, behind the text, below the h3. */
 .step-word { position: absolute; z-index: 0; right: 16px; bottom: 8px; font: italic 400 60px/1.15 var(--font-serif); color: var(--sage-dark); opacity: .28; pointer-events: none; user-select: none; }
@@ -321,7 +322,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 
 /* ---------- Testimonials ---------- */
 .voices { --accent-text: var(--coral-light); color: var(--paper); background: var(--sage-dark); padding: clamp(80px, 9vw, 140px) clamp(20px, 6vw, 100px); overflow-x: clip; }
-.voices-heading { max-width: 1200px; margin: 0 auto clamp(44px, 6vw, 80px); }
+.voices-heading { max-width: 1100px; margin: 0 auto clamp(44px, 6vw, 80px); }
 .voices .section-kicker { color: var(--coral-light); }
 .voices-stage { --voice-gap: clamp(22px, 2.4vw, 36px); list-style: none; margin: 0 auto; padding: 0; max-width: 1100px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--voice-gap); align-items: start; perspective: 1600px; }
 .voice:nth-child(2n) { margin-top: 56px; }
@@ -547,7 +548,7 @@ footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: 
   .values span { font-size: 12px; min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
   .service-price { font-size: clamp(21px, 6.6vw, 26px); }
   .services { padding-bottom: 80px; }
-  .services-heading { margin-bottom: 50px; }
+  .services-heading { flex-direction: column; gap: 0; margin-bottom: 50px; }
   .service-card { padding: 23px 20px 30px; }
   .service-content { gap: 35px; }
   .service-details { padding: 0 0 70px; }

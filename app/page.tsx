@@ -382,7 +382,7 @@ export default function Home() {
           <div className="services-main">
             <div className="services-heading">
               <p className="section-kicker" data-reveal>Két út, egy közös alap</p>
-              <h2 id="szolgaltatasok-title" data-reveal>Találd meg azt,<br /><em>amire most szükséged&nbsp;van.</em></h2>
+              <h2 id="szolgaltatasok-title" data-reveal>Találd meg azt, <em className="line-block">amire most szükséged van.</em></h2>
             </div>
 
             <div className="service-stage">
@@ -428,7 +428,7 @@ export default function Home() {
           <div className="method-main">
             <div className="method-intro">
               <p className="section-kicker" data-reveal>A folyamat</p>
-              <h2 id="modszertan-title" data-reveal>Nem kell előre<br /><em>tudnod az&nbsp;utat.</em></h2>
+              <h2 id="modszertan-title" data-reveal>Nem kell előre <em className="line-block">tudnod az utat.</em></h2>
               <p data-reveal>Elég, ha megérkezel. A többit lépésről lépésre közösen alakítjuk.</p>
             </div>
             <div className="steps">
@@ -436,7 +436,7 @@ export default function Home() {
                 <article data-reveal key={step.number}>
                   <span className="step-number">{step.number}</span>
                   <div><h3>{step.title}</h3><p>{step.text}</p></div>
-                  <span className="step-word" aria-hidden="true">{step.word}</span>
+                  <span className="step-word" aria-hidden="true" data-word={step.word} />
                 </article>
               ))}
             </div>
