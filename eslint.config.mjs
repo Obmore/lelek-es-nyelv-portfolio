@@ -1,11 +1,25 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals';
-import nextTs from 'eslint-config-next/typescript';
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'dist/**', 'dist-github-pages/**', '.vinext/**', '.wrangler/**', '.claude/**', '.ui-check/**']),
+export default defineConfig([
+  globalIgnores(['dist-github-pages/**', '.claude/**', '.ui-check/**']),
+  js.configs.recommended,
+  tseslint.configs.recommended,
+  reactHooks.configs.flat.recommended,
+  {
+    files: ['app/**', 'github-pages/**'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['**/*.mjs', 'vite.config.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    // page.evaluate callbacks run in the browser.
+    files: ['scripts/make-og-image.mjs', 'scripts/verify-render.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
 ]);
-
-export default eslintConfig;

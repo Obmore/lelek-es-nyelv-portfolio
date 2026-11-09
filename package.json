@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "eslint .",
     "verify:content": "node scripts/verify-content.mjs --build",
     "verify:render": "node scripts/verify-render.mjs",
     "check": "npm run lint && npm run typecheck && npm run build && node scripts/verify-content.mjs && npm run verify:render"
@@ -24,6 +24,7 @@
     "three": "0.186.1"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.4",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -32,10 +33,11 @@
     "@vitejs/plugin-react": "6.0.2",
     "esbuild": "0.27.3",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "next": "16.4.4",
+    "eslint-plugin-react-hooks": "7.0.0",
+    "globals": "17.14.0",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
     "vite": "8.3.5"
   },
   "type": "module"

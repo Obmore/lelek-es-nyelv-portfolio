@@ -53,7 +53,7 @@ function decode(s) {
   s = s.replace(/<!--[\s\S]*?-->/g, "");
   // JS escapes (single pass so "\\u00a0" style double escapes resolve stepwise below)
   const jsEsc = (str) =>
-    str.replace(/\\(u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([nrt'"\\\/`]))/g,
+    str.replace(/\\(u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([nrt'"\\/`]))/g,
       (_, __, brace, u4, x2, ch) => {
         if (brace) return cp(parseInt(brace, 16));
         if (u4) return cp(parseInt(u4, 16));
@@ -145,7 +145,8 @@ const required = [
   ["privacy heading", "Adatkezelési tájékoztató"],
 ];
 
-const OLD_EMAIL = "benzdsiott1998@gmail.com";
+// Built from parts so the old personal address is not stored in the repo as a literal.
+const OLD_EMAIL = ["benzdsiott1998", "@", "gmail.com"].join("");
 const ws = "[\\s\\u00a0]";
 const forbidden = [
   ["ingyenes/ingyen", /ingyen/i],
