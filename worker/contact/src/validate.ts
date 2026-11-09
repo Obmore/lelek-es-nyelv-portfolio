@@ -1,4 +1,4 @@
-import { CONSENT_VALUE, FIELDS, PHONE_PREF, REPLY_PREFS, TOPICS } from './contract.ts';
+import { CONSENT_VALUE, FIELDS, LIMITS, PHONE_PREF, REPLY_PREFS, TOPICS } from './contract.ts';
 import { stripControl } from './mail.ts';
 import type { Submission } from './mail.ts';
 
@@ -16,7 +16,7 @@ function str(input: Record<string, unknown>, key: string): string | undefined {
 }
 
 function validEmail(email: string): boolean {
-  if (email.length === 0 || email.length > 254) return false;
+  if (email.length === 0 || email.length > LIMITS.email) return false;
   const parts = email.split('@');
   if (parts.length !== 2) return false;
   const [local, domain] = parts as [string, string];
@@ -36,7 +36,7 @@ export function validate(input: Record<string, unknown>): ValidationResult {
 
   const nameRaw = str(input, FIELDS.name);
   const name = nameRaw === undefined ? undefined : stripControl(nameRaw);
-  if (name === undefined || name.length < 1 || name.length > 100 || !HAS_LETTER_OR_DIGIT.test(name)) {
+  if (name === undefined || name.length < 1 || name.length > LIMITS.name || !HAS_LETTER_OR_DIGIT.test(name)) {
     return { ok: false, field: FIELDS.name };
   }
 
@@ -50,12 +50,12 @@ export function validate(input: Record<string, unknown>): ValidationResult {
   const phoneValue = Object.hasOwn(input, FIELDS.phone) ? input[FIELDS.phone] : undefined;
   if (phoneValue !== undefined && typeof phoneValue !== 'string') return { ok: false, field: FIELDS.phone };
   const phone = (phoneValue ?? '').trim();
-  if (phone.length > 30 || !PHONE_CHARS.test(phone)) return { ok: false, field: FIELDS.phone };
+  if (phone.length > LIMITS.phone || !PHONE_CHARS.test(phone)) return { ok: false, field: FIELDS.phone };
   if (phone.length > 0 && phone.replace(/\D/g, '').length < 6) return { ok: false, field: FIELDS.phone };
   if (pref === PHONE_PREF && phone.length === 0) return { ok: false, field: FIELDS.phone };
 
   const message = str(input, FIELDS.message)?.trim();
-  if (message === undefined || message.length < 1 || message.length > 5000) return { ok: false, field: FIELDS.message };
+  if (message === undefined || message.length < 1 || message.length > LIMITS.message) return { ok: false, field: FIELDS.message };
 
   const consent = str(input, FIELDS.consent);
   if (consent !== CONSENT_VALUE) return { ok: false, field: FIELDS.consent };

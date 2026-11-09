@@ -13,6 +13,9 @@ export const PHONE_PREF = 'Telefonon';
 export const CONSENT_VALUE = 'Elfogadva';
 export const HONEYPOT = '_honey';
 
+// Maximum lengths; the form's maxLength attributes must equal these (scripts/verify-worker-contract.mjs).
+export const LIMITS = { name: 100, email: 254, phone: 30, message: 5000 };
+
 export const FIELDS = {
   topic: 'Megkeresés témája',
   name: 'Név',

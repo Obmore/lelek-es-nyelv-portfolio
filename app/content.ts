@@ -1,14 +1,14 @@
 // All content that Anna may want to edit lives here. page.tsx only renders it.
 // U+00A0 (non-breaking space) keeps prices from wrapping in the middle of a number.
 
-/** The site owner and the contact e-mail; the form endpoints are built from the e-mail. */
+/** The site owner and the contact e-mail. */
 export const OWNER_NAME = 'Juhász Nagy Anna';
 export const CONTACT_EMAIL = 'juhasznagyanna@gmail.com';
 /** The owner's public phone number: display text (with U+00A0 between the groups) and its tel: link. */
 export const CONTACT_PHONE = '+36\u00a020\u00a0319\u00a05621';
 export const CONTACT_PHONE_HREF = 'tel:+36203195621';
-export const FORM_ENDPOINT = `https://formsubmit.co/${CONTACT_EMAIL}`;
-export const FORM_AJAX_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
+/** The contact form Worker (worker/contact); the form posts its fields to it as JSON. */
+export const FORM_ENDPOINT = 'https://urlap.lelekesnyelv.hu/';
 
 /** Optional links: the link renders only when the URL is set. */
 export const INSTAGRAM_URL: string | null = null;
@@ -227,7 +227,7 @@ export const privacySections: PrivacySection[] = [
     title: 'Kik férnek hozzá az adatokhoz?',
     paragraphs: ['Az üzenetedet és az oldalt a következő szolgáltatók segítségével működtetem:'],
     items: [
-      'FormSubmit (formsubmit.co): az űrlap tartalmát e-mailben továbbítja a postafiókomba.',
+      'Cloudflare (cloudflare.com): az oldal domainnevének (DNS) szolgáltatója. A Cloudflare szerverén futó program fogadja és ellenőrzi az űrlapot, majd e-mailben továbbítja a postafiókomba. Az üzeneted tartalmát nem tárolja, csak továbbítja. A visszaélések kiszűréséhez rövid ideig felhasználja az IP-címedet, a levélküldésről pedig technikai naplót vezet (időpont, címzett, tárgy, amely a megkeresés témáját és időpontját tartalmazza), amelynek megőrzési idejét a Cloudflare szabályozza.',
       'Google (Gmail): az a levelezési fiók, amelyben az üzeneted megérkezik és tárolódik.',
       'GitHub (GitHub Pages): az oldal tárhelye. A kiszolgálói naplók technikai adatokat, például IP-címet rögzíthetnek.',
     ],

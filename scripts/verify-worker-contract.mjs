@@ -62,6 +62,11 @@ const workerDestination = stringConst(contract, "DESTINATION", "contract.ts");
 const workerFields = objectValues(contract, "FIELDS", "contract.ts");
 const workerOrigin = stringConst(contract, "ALLOWED_ORIGIN", "contract.ts");
 const workerSender = stringConst(contract, "SENDER", "contract.ts");
+const limitsMatch = contract.match(/export const LIMITS\s*=\s*\{([^}]*)\}/);
+if (!limitsMatch) broken("LIMITS in contract.ts");
+const workerLimits = Object.fromEntries([...limitsMatch[1].matchAll(/(\w+)\s*:\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]));
+const workerDomain = wrangler.match(/"routes"\s*:\s*\[\s*\{[^}]*"pattern"\s*:\s*"([^"]*)"/)?.[1];
+if (!workerDomain) broken("the custom-domain pattern in wrangler.jsonc");
 
 // Site side.
 const topicsMatch = content.match(/export const topics\s*=\s*\[([^\]]*)\]/);
@@ -85,7 +90,7 @@ const sitePrefs = [...selectMatch[0].matchAll(/<option>([\s\S]*?)<\/option>/g)].
 const formMatch = page.match(/<form[\s\S]*?<\/form>/);
 if (!formMatch) broken("<form> in app/page.tsx");
 const formNames = [...formMatch[0].matchAll(/\bname="([^"]+)"/g)].map((m) => m[1]);
-// FormSubmit-only hidden fields (_subject, _template, _captcha) are not part of the contract; only _honey is checked.
+// Hidden and honeypot inputs start with an underscore; only _honey is part of the contract.
 const siteFields = [...new Set(formNames.filter((n) => !n.startsWith("_")))];
 const siteHidden = [...new Set(formNames.filter((n) => n.startsWith("_")))];
 const consentValue = formMatch[0].match(/name="Adatkezelési hozzájárulás"[^>]*\bvalue="([^"]*)"/)?.[1];
@@ -98,6 +103,19 @@ sameSet("reply preferences", sitePrefs, workerPrefs);
 sameSet("form field names", siteFields, workerFields);
 if (phoneReply !== workerPhonePref) fail(`phone preference: site PHONE_REPLY ${JSON.stringify(phoneReply)} vs Worker ${JSON.stringify(workerPhonePref)}`);
 if (consentValue !== workerConsent) fail(`consent value: site ${JSON.stringify(consentValue)} vs Worker ${JSON.stringify(workerConsent)}`);
+// maxLength of each text field must equal the Worker's LIMITS.
+for (const [key, fieldName, tag] of [["name", "Név", "input"], ["email", "email", "input"], ["phone", "Telefonszám", "input"], ["message", "Üzenet", "textarea"]]) {
+  const el = formMatch[0].match(new RegExp(`<${tag}\\b[^>]*\\bname="${fieldName}"[^>]*>`))?.[0];
+  if (!el) {
+    fail(`maxLength: no <${tag}> named ${fieldName} in the form`);
+    continue;
+  }
+  const siteMax = el.match(/\bmaxLength=\{(\d+)\}/)?.[1];
+  if (siteMax === undefined || Number(siteMax) !== workerLimits[key]) fail(`maxLength of ${fieldName}: site ${siteMax} vs Worker LIMITS.${key} ${workerLimits[key]}`);
+}
+// The form posts to the Worker's custom domain.
+const siteEndpoint = stringConst(content, "FORM_ENDPOINT", "app/content.ts");
+if (siteEndpoint !== `https://${workerDomain}/`) fail(`endpoint: FORM_ENDPOINT ${JSON.stringify(siteEndpoint)} vs https://${workerDomain}/ from wrangler.jsonc`);
 if (!siteHidden.includes(workerHoney)) fail(`honeypot: the form has no input named ${workerHoney}`);
 if (!/\binput\[HONEYPOT\]/.test(handler)) fail("honeypot: the Worker handler does not read input[HONEYPOT]");
 const siteOrigin = new URL(SITE_URL).origin;
