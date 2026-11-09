@@ -259,6 +259,19 @@ for (const item of c.testimonials) {
   check(pullOpens.every((o) => attr(o, "aria-hidden") === "true"), "every .voice-pull carries aria-hidden=\"true\"");
 }
 
+/* ---- method step words (decoration rendered by CSS only) ---- */
+{
+  const words = elements(html, "span", /class="[^"]*\bstep-word\b/);
+  check(words.length === c.methodSteps.length, "method step-word span count matches content", `${words.length} vs ${c.methodSteps.length}`);
+  check(words.length > 0 && words.every((el) => attr(el.open, "aria-hidden") === "true"), "every .step-word carries aria-hidden=\"true\"");
+  check(
+    words.length === c.methodSteps.length && words.every((el, i) => attr(el.open, "data-word") === c.methodSteps[i].word),
+    "every .step-word data-word equals its step word, in order",
+    JSON.stringify(words.map((el) => attr(el.open, "data-word"))),
+  );
+  check(words.length > 0 && words.every((el) => el.inner === ""), "every .step-word has no text content (the word comes only from CSS)", JSON.stringify(words.map((el) => el.inner)));
+}
+
 /* ---- FAQ ---- */
 {
   const details = elements(html, "details", /^<details/);
