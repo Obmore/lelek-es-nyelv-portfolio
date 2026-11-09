@@ -304,7 +304,7 @@ for (const stem of ["anna-portrait-480.webp", "anna-portrait-800.webp", "anna-po
   report(/<html[^>]*\blang="hu"/.test(nf), "404.html is lang hu");
   report(/<meta\s+name="robots"\s+content="noindex"/.test(nf), "404.html is noindex");
   report(nf.includes(`href="${SITE_URL}"`) && nf.includes(`href="${SITE_URL}#kapcsolat"`), "404.html links to the home page and the contact section by absolute URL");
-  report(!nf.includes("%SITE_URL%") && !/(?:src|href)="https?:\/\/(?!lelekesnyelv\.hu)/.test(nf), "404.html has no token and no external requests");
+  report(!nf.includes("%SITE_URL%") && !new RegExp(`(?:src|href)="https?://(?!${new URL(SITE_URL).host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`).test(nf), "404.html has no token and no external requests");
 
   const pngPath = join(distDir, "apple-touch-icon.png");
   let png = "missing";
@@ -325,8 +325,9 @@ for (const stem of ["anna-portrait-480.webp", "anna-portrait-800.webp", "anna-po
   report(ld?.["@type"] === "ProfessionalService" && ld.url === SITE_URL && ld.image === `${SITE_URL}og-image.png`, "index.html has parseable ProfessionalService JSON-LD with site url and image");
   const priceOf = (name) => Number((source.match(new RegExp(`${name}\\s*=\\s*'([^']*)'`))?.[1] ?? "").split("Ft")[0].replace(/\D/g, ""));
   const offers = (ld?.makesOffer ?? []).map((o) => [o.itemOffered?.name, o.priceSpecification?.price, o.priceSpecification?.priceCurrency]);
-  const expected = [["Mentálhigiénés segítő beszélgetés", priceOf("PRICE_MENTAL"), "HUF"], ["Angol oktatás", priceOf("PRICE_ENGLISH"), "HUF"]];
-  report(expected.every((e) => e[1] > 0) && JSON.stringify(offers) === JSON.stringify(expected), "JSON-LD offers match the content names and prices", `got ${JSON.stringify(offers)} want ${JSON.stringify(expected)}`);
+  const nameOf = (priceConst) => source.match(new RegExp(`name: '([^']*)',(?:(?!name: ')[^])*?price: ${priceConst}`))?.[1];
+  const expected = [[nameOf("PRICE_MENTAL"), priceOf("PRICE_MENTAL"), "HUF"], [nameOf("PRICE_ENGLISH"), priceOf("PRICE_ENGLISH"), "HUF"]];
+  report(expected.every((e) => e[0] && e[1] > 0) && JSON.stringify(offers) === JSON.stringify(expected), "JSON-LD offers match the content names and prices", `got ${JSON.stringify(offers)} want ${JSON.stringify(expected)}`);
   report(!/[a-z0-9.-]+@[a-z0-9-]+[.][a-z]+|tel:|openingHours|aggregateRating|address/i.test(ldRaw ?? "x"), "JSON-LD has no e-mail, phone, address, hours or rating");
 
   // Font preloads: exactly the two critical fonts, pointing at files that exist.

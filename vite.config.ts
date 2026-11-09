@@ -39,7 +39,7 @@ const notFoundPage = `<!doctype html>
     <meta name="theme-color" content="#203127" />
     <title>Az oldal nem található – Lélek &amp; Nyelv</title>
     <link rel="icon" href="${SITE_URL}favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="${SITE_URL}favicon.ico" sizes="any" />
+    <link rel="icon" href="${SITE_URL}favicon.ico" sizes="32x32" />
     <style>
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f3eee4; color: #203127; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; }
       main { max-width: 32rem; padding: 2rem 1.25rem; }
