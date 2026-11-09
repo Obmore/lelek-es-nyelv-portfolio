@@ -130,7 +130,6 @@ const required = [
   ["FAQ exam answer (v2)", "Minden nemzetközi (például IELTS, Cambridge) és akkreditált magyar nyelvvizsgára (például Origó, Euroexam, BME, telc) vállalok felkészítést, alap-, közép- és felsőfokon."],
   ["English card paragraph", "Beszédközpontú órák diákoknak és felnőtteknek, nyelvvizsgára készülőknek is. Nem a görcsös teljesítés a cél, hanem a valódi kapcsolódás."],
   ["hero lead sentence", "Segítek közelebb kerülni önmagadhoz, és magabiztosabban megszólalni angolul."],
-  ["form subject", "Új megkeresés a Lélek & Nyelv oldalról"],
   ["Facebook URL", "https://www.facebook.com/anna.juhasznagy"],
   ["chip nyelvvizsga-felkészítés", "nyelvvizsga-felkészítés"],
   ["full name", "Juhász Nagy Anna"],
@@ -264,8 +263,8 @@ for (const [corpusName, corpus] of [["built", built], ["app source", source]]) {
 
 // E-mail and endpoint checks (exact endpoint values are asserted in verify-render)
 report(built.includes(EMAIL), "built contains the expected contact e-mail");
-report(built.includes("https://formsubmit.co/"), "built contains the form endpoint prefix https://formsubmit.co/");
-report(built.includes("https://formsubmit.co/ajax/"), "built contains the AJAX endpoint prefix https://formsubmit.co/ajax/");
+report(built.includes("urlap.lelekesnyelv.hu"), "built contains the form Worker host urlap.lelekesnyelv.hu");
+report(!built.includes("formsubmit.co"), "built does not contain formsubmit.co");
 report(!built.includes(OLD_EMAIL), "built lacks the old contact e-mail");
 report(
   /\.step-word\s*::?before\s*\{[^}]*content:\s*attr\(\s*data-word\s*\)/.test(built),

@@ -384,7 +384,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .contact h2 em { color: var(--coral-light); }
 .contact-intro > p:not(.section-kicker):not(.contact-direct) { max-width: 510px; margin: 42px 0 42px; font-size: 17px; line-height: 1.7; color: var(--paper); }
 .contact-promise { display: flex; gap: 18px; align-items: center; padding: 19px 0; border-top: 1px solid rgba(251,248,242,.35); }
-.contact-promise:last-child { border-bottom: 1px solid rgba(251,248,242,.35); }
+.contact-promise:last-of-type { border-bottom: 1px solid rgba(251,248,242,.35); }
 .contact-promise > span { font: italic 400 22px var(--font-serif); color: var(--paper); }
 .contact-promise p { margin: 0; font-size: 13px; line-height: 1.6; text-transform: uppercase; letter-spacing: .07em; }
 .contact-promise p b { color: var(--paper); font-weight: 700; }

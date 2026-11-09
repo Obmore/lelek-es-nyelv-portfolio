@@ -15,7 +15,6 @@ import {
   CONSENT_LINK,
   CONTACT_PHONE,
   CONTACT_PHONE_HREF,
-  FORM_AJAX_ENDPOINT,
   FORM_ENDPOINT,
   PRIVACY_URL,
   aboutParagraphs,
@@ -234,13 +233,19 @@ export default function Home() {
 
     try {
       const payload = Object.fromEntries(new FormData(form).entries());
-      const response = await fetch(FORM_AJAX_ENDPOINT, {
+      const response = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      const result = await response.json() as { success?: boolean | string };
+      const result = await response.json() as { success?: boolean | string; error?: string };
+
+      // The Worker answers 504 send_timeout when it cannot tell whether the mail went out: same as a client-side abort.
+      if (response.status === 504 && result.error === 'send_timeout') {
+        setFormStatus('uncertain');
+        return;
+      }
 
       if (!response.ok || result.success === false || result.success === 'false') {
         throw new Error('A küldés sikertelen.');
@@ -519,15 +524,11 @@ export default function Home() {
 
           <form
             className="contact-form"
-            action={FORM_ENDPOINT}
             method="POST"
             onSubmit={handleSubmit}
             onChange={() => setFormStatus((status) => (status === 'sent' || status === 'error' ? 'idle' : status))}
             data-reveal
           >
-            <input type="hidden" name="_subject" value="Új megkeresés a Lélek & Nyelv oldalról" />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_captcha" value="false" />
             <input type="text" name="_honey" className="honey-field" tabIndex={-1} autoComplete="off" aria-hidden="true" />
 
             <div className="form-heading">
@@ -550,11 +551,11 @@ export default function Home() {
             <div className="form-grid">
               <label className="field">
                 <span>Neved</span>
-                <input type="text" name="Név" placeholder="Hogy szólíthatlak?" autoComplete="name" required />
+                <input type="text" name="Név" placeholder="Hogy szólíthatlak?" autoComplete="name" maxLength={100} required />
               </label>
               <label className="field">
                 <span>E-mail-címed</span>
-                <input type="email" name="email" placeholder="nev@email.hu" autoComplete="email" required />
+                <input type="email" name="email" placeholder="nev@email.hu" autoComplete="email" maxLength={254} required />
               </label>
               <label className="field">
                 <span>Hogyan válaszoljak?</span>
@@ -566,11 +567,11 @@ export default function Home() {
               </label>
               <label className="field">
                 <span>Telefonszámod <i>{phoneRequired ? '(kötelező)' : '(opcionális)'}</i></span>
-                <input type="tel" name="Telefonszám" placeholder="+36 30 123 4567" autoComplete="tel" required={phoneRequired} />
+                <input type="tel" name="Telefonszám" placeholder="+36 30 123 4567" autoComplete="tel" maxLength={30} pattern="(?=(?:\D*\d){6})[0-9 +\-\(\)\/.]{6,30}" required={phoneRequired} />
               </label>
               <label className="field message-field">
                 <span>Üzeneted</span>
-                <textarea name="Üzenet" placeholder="Néhány mondat arról, miben vagy most, és miben lenne jó támogatást kapnod…" rows={6} required />
+                <textarea name="Üzenet" placeholder="Néhány mondat arról, miben vagy most, és miben lenne jó támogatást kapnod…" rows={6} maxLength={5000} required />
               </label>
             </div>
 

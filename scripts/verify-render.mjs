@@ -433,7 +433,8 @@ if (privacyHtml !== null) {
   const t = text(privacyHtml);
   const h1s = [...privacyHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map((m) => text(m[1]));
   check(h1s.length === 1 && h1s[0] === "Adatkezelési tájékoztató", "privacy page has one <h1> Adatkezelési tájékoztató", JSON.stringify(h1s));
-  for (const needle of ["Juhász Nagy Anna", "formsubmit.co", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
+  check(!/formsubmit/i.test(t), "privacy page does not mention formsubmit");
+  for (const needle of ["Juhász Nagy Anna", "Cloudflare (cloudflare.com)", "GitHub", "Google", "6. cikk", "9. cikk", "1 év", "Impresszum"]) {
     check(has(t, needle), `privacy page contains "${needle}"`);
   }
   check(has(t, "NAIH") || has(t, "Nemzeti Adatvédelmi és Információszabadság Hatóság"), "privacy page names NAIH");
@@ -538,7 +539,7 @@ for (const [label, markup] of [["home page", html], ["privacy page", privacyHtml
 {
   const form = elements(html, "form", /^<form/)[0];
   const names = form ? [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => attr(m[0], "name")) : [];
-  check(names.includes("email") && !names.includes("E-mail"), "form has an input named \"email\" (FormSubmit Reply-To) and none named \"E-mail\"", JSON.stringify(names));
+  check(names.includes("email") && !names.includes("E-mail"), "form has an input named \"email\" (the Worker's reply-to field) and none named \"E-mail\"", JSON.stringify(names));
 }
 
 /* ---- focusable sections (mobile nav targets) ---- */
@@ -591,10 +592,17 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
   const form = elements(html, "form", /^<form/)[0];
   check(Boolean(form), "contact form rendered");
   if (form) {
-    check(attr(form.open, "action") === c.FORM_ENDPOINT, "form action equals FORM_ENDPOINT", String(attr(form.open, "action")));
-    check(attr(form.open, "action") === `https://formsubmit.co/${EMAIL}`, "form action equals https://formsubmit.co/<expected e-mail>");
-    check(c.FORM_ENDPOINT === `https://formsubmit.co/${EMAIL}`, "FORM_ENDPOINT equals https://formsubmit.co/<expected e-mail>", String(c.FORM_ENDPOINT));
-    check(c.FORM_AJAX_ENDPOINT === `https://formsubmit.co/ajax/${EMAIL}`, "FORM_AJAX_ENDPOINT equals https://formsubmit.co/ajax/<expected e-mail>", String(c.FORM_AJAX_ENDPOINT));
+    // No action: a native submit (if the JS handler ever fails) must not leave the page for a third party.
+    check(attr(form.open, "action") === null, "form has no action attribute", String(attr(form.open, "action")));
+    check(c.FORM_ENDPOINT === "https://urlap.lelekesnyelv.hu/", "FORM_ENDPOINT equals https://urlap.lelekesnyelv.hu/", String(c.FORM_ENDPOINT));
+    check(c.FORM_AJAX_ENDPOINT === undefined, "FORM_AJAX_ENDPOINT no longer exists");
+    const controls = [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => m[0]);
+    const control = (name) => controls.find((open) => attr(open, "name") === name) ?? "";
+    for (const [name, max] of [["Név", "100"], ["email", "254"], ["Telefonszám", "30"], ["Üzenet", "5000"]]) {
+      check(attr(control(name), "maxLength") === max, `${name} has maxLength ${max}`, String(attr(control(name), "maxLength")));
+    }
+    const PHONE_PATTERN = String.raw`(?=(?:\D*\d){6})[0-9 +\-\(\)\/.]{6,30}`;
+    check(attr(control("Telefonszám"), "pattern") === PHONE_PATTERN, "Telefonszám has the v-flag-safe phone pattern", String(attr(control("Telefonszám"), "pattern")));
     const fieldOrder = [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => attr(m[0], "name"));
     const iSel = fieldOrder.indexOf("Preferált elérhetőség");
     const iTel = fieldOrder.indexOf("Telefonszám");
@@ -606,7 +614,7 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
         .filter(Boolean),
     );
     const expected = [
-      "_subject", "_template", "_captcha", "_honey", "Megkeresés témája", "Név", "email",
+      "_honey", "Megkeresés témája", "Név", "email",
       "Telefonszám", "Preferált elérhetőség", "Üzenet", "Adatkezelési hozzájárulás",
     ];
     const got = [...names].sort();
