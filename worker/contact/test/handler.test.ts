@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handle } from '../src/handler.ts';
+import worker from '../src/index.ts';
 import { ALLOWED_ORIGIN, DESTINATION, FIELDS } from '../src/contract.ts';
 import type { EmailMessage, Env } from '../src/env.ts';
 
@@ -224,7 +225,7 @@ describe('POST /', () => {
     expect(mail.from).toEqual({ email: 'urlap@lelekesnyelv.hu', name: 'Lélek & Nyelv űrlap' });
     expect(mail.replyTo.email).toBe(SECRET_EMAIL);
     expect(mail.replyTo.name).toBe(SECRET_NAME);
-    expect(mail.subject).toBe('Új megkeresés a Lélek & Nyelv oldalról: Angolóra');
+    expect(mail.subject).toMatch(/^Új megkeresés a Lélek & Nyelv oldalról: Angolóra \(\d{4}\.\d{2}\.\d{2}\. \d{2}:\d{2}\)$/);
     expect(Object.keys(mail).sort()).toEqual(['from', 'html', 'replyTo', 'subject', 'text', 'to']);
   });
 
@@ -301,7 +302,7 @@ describe('POST /', () => {
       const h = makeEnv();
       const res = await handle(post(validBody({ [FIELDS.topic]: topic, [FIELDS.pref]: 'Mindegy', [FIELDS.phone]: '' })), h.env);
       expect(res.status).toBe(200);
-      expect(h.sent[0]!.subject).toBe(`Új megkeresés a Lélek & Nyelv oldalról: ${topic}`);
+      expect(h.sent[0]!.subject).toContain(`oldalról: ${topic} (`);
     }
   });
 
@@ -655,5 +656,51 @@ describe('send() is never called on a rejection path', () => {
       await handle(req, h.env);
       expect(h.send).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('subject', () => {
+  async function subjectAt(iso: string, topic = 'Angolóra'): Promise<string> {
+    const h = makeEnv();
+    await handle(post(validBody({ [FIELDS.topic]: topic })), h.env, { now: () => Date.parse(iso) });
+    return h.sent[0]!.subject;
+  }
+
+  it('appends the Budapest time in winter (CET, UTC+1)', async () => {
+    expect(await subjectAt('2026-11-09T19:53:00Z')).toBe('Új megkeresés a Lélek & Nyelv oldalról: Angolóra (2026.11.09. 20:53)');
+    expect(await subjectAt('2026-01-15T10:05:00Z')).toBe('Új megkeresés a Lélek & Nyelv oldalról: Angolóra (2026.01.15. 11:05)');
+  });
+
+  it('appends the Budapest time in summer (CEST, UTC+2)', async () => {
+    expect(await subjectAt('2026-07-15T10:05:00Z')).toBe('Új megkeresés a Lélek & Nyelv oldalról: Angolóra (2026.07.15. 12:05)');
+  });
+
+  it('rolls over midnight with 00 hours, not 24', async () => {
+    expect(await subjectAt('2026-01-14T23:30:00Z', 'Egyéb')).toBe('Új megkeresés a Lélek & Nyelv oldalról: Egyéb (2026.01.15. 00:30)');
+  });
+
+  it('gives two submissions a minute apart different subjects', async () => {
+    const a = await subjectAt('2026-11-09T19:53:00Z');
+    const b = await subjectAt('2026-11-09T19:54:00Z');
+    expect(a).not.toBe(b);
+  });
+
+  it('contains no visitor text', async () => {
+    const subject = await subjectAt('2026-11-09T19:53:00Z');
+    for (const secret of ['Éva', 'Őri', SECRET_EMAIL, SECRET_PHONE, 'titkos', 'UNKNOWN-KEY-VALUE', 'attacker']) {
+      expect(subject).not.toContain(secret);
+    }
+  });
+});
+
+describe('default export', () => {
+  it('delegates fetch to handle', async () => {
+    const h = makeEnv();
+    const res = await worker.fetch(new Request('https://urlap.lelekesnyelv.hu/health'), h.env);
+    expect(res.status).toBe(200);
+    expect(await jsonOf(res)).toEqual({ ok: true });
+    const sent = await worker.fetch(post(validBody()), h.env);
+    expect(sent.status).toBe(200);
+    expect(h.send).toHaveBeenCalledTimes(1);
   });
 });

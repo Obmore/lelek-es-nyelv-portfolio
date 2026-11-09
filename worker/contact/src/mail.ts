@@ -35,8 +35,26 @@ export function cleanDisplayName(value: string): string {
   return value.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim();
 }
 
-export function buildSubject(topic: string): string {
-  return `Új megkeresés a Lélek & Nyelv oldalról: ${topic}`;
+const BUDAPEST_TIME = new Intl.DateTimeFormat('hu-HU', {
+  timeZone: 'Europe/Budapest',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** 'YYYY.MM.DD. HH:MM' in Budapest local time, built from parts so it does not depend on the locale's separators. */
+export function formatBudapestTime(epochMs: number): string {
+  const p: Record<string, string> = {};
+  for (const part of BUDAPEST_TIME.formatToParts(new Date(epochMs))) p[part.type] = part.value;
+  return `${p.year}.${p.month}.${p.day}. ${p.hour}:${p.minute}`;
+}
+
+/** Topic is an allowlisted value; the time makes the subject unique so Gmail does not thread all visitors together. */
+export function buildSubject(topic: string, epochMs: number): string {
+  return `Új megkeresés a Lélek & Nyelv oldalról: ${topic} (${formatBudapestTime(epochMs)})`;
 }
 
 export function buildText(s: Submission): string {

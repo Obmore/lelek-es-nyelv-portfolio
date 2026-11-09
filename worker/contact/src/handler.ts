@@ -172,7 +172,7 @@ async function route(request: Request, env: Env, deps: Deps): Promise<Routed> {
           to: DESTINATION,
           from: { email: SENDER, name: SENDER_NAME },
           replyTo: { email: s.email, name: cleanDisplayName(s.name) },
-          subject: buildSubject(s.topic),
+          subject: buildSubject(s.topic, (deps.now ?? Date.now)()),
           text: buildText(s),
           html: buildHtml(s),
         }),
