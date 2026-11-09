@@ -472,7 +472,7 @@ export default function Home() {
           </div>
           <div className="faq-main">
             <p className="section-kicker" data-reveal>Mielőtt belevágunk</p>
-            <h2 data-reveal>Jó kérdés.<br /><em>Beszéljünk róla.</em></h2>
+            <h2 data-reveal>Jó kérdés. <em className="line-block">Beszéljünk róla.</em></h2>
             <div className="faq-list" data-reveal>
               {faqs.map((faq, index) => (
                 <details key={faq.question}>

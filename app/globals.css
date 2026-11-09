@@ -401,7 +401,9 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .field > span i { margin-left: 5px; font-style: normal; font-weight: 500; color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
 .field input, .field select, .field textarea { width: 100%; min-width: 0; min-height: 48px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--ink-soft); border-radius: 0; outline: 0; color: var(--ink); background: transparent; font: 400 16px/1.5 var(--font-sans); transition: border-color .25s ease; }
 .field textarea { resize: vertical; line-height: 1.65; }
-.field input, .field select, .field textarea, .topic-options input { scroll-margin-top: calc(var(--header-h) + 32px); }
+.field input, .field select, .field textarea { scroll-margin-top: 32px; }
+/* The topic group label sits above the pills, further from the hidden radio. */
+.topic-options input { scroll-margin-top: 96px; }
 .field input::placeholder, .field textarea::placeholder { color: #66756b; opacity: 1; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--coral-deep); box-shadow: 0 1px 0 var(--coral-deep); }
 .message-field { grid-column: 1 / -1; }
@@ -505,6 +507,7 @@ footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: 
   .contact { grid-template-columns: 1fr; }
   .contact-intro { max-width: 720px; }
   .voices-stage { grid-template-columns: minmax(0, 640px); justify-content: center; }
+  .voices-heading { max-width: 640px; }
   .voice:nth-child(n) { margin-top: 0; }
 }
 
