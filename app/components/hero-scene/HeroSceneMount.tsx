@@ -1,5 +1,3 @@
-'use client';
-
 // Entry-chunk helper: decides whether to load the WebGL hero scene, loads it when the page is idle and
 // isolates every failure so the CSS hero stays untouched. It does not import three.js itself; the scene
 // lives in its own lazy chunk.

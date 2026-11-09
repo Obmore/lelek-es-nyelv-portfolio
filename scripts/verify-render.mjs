@@ -477,6 +477,32 @@ check(bundleText.includes("#adatkezeles") && bundleText.includes("location.repla
   check(tops.every((tag) => /class="[^"]*\bbrand\b/.test(tag)), "every href=\"#top\" link is a brand link");
 }
 
+/* ---- skip link, reply-to field and brand accessible names ---- */
+for (const [label, markup] of [["home page", html], ["privacy page", privacyHtml]]) {
+  if (markup == null) continue;
+  const anchors = [...markup.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+  const first = anchors[0];
+  const href = first ? attr(first, "href") : null;
+  check(Boolean(first) && /\bskip-link\b/.test(attr(first, "class") ?? "") && Boolean(href) && href.startsWith("#"), `${label}: the first link in the document is the skip link`, String(first));
+  const targetId = href ? href.slice(1) : "";
+  const target = targetId ? [...markup.matchAll(/<main\b[^>]*>/g)].map((m) => m[0]).find((o) => attr(o, "id") === targetId) : null;
+  check(Boolean(target) && attr(target, "tabindex") === "-1", `${label}: the skip link target is <main id> with tabindex="-1"`, String(target));
+  check(Boolean(first) && markup.indexOf(first) < markup.indexOf("<header"), `${label}: the skip link comes before the header`);
+  const brands = elements(markup, "a", /class="[^"]*\bbrand\b/);
+  const squash = (v) => v.toLowerCase().replace(/&amp;/g, "&").replace(/[^\p{L}&]+/gu, "");
+  const results = brands.map((brand) => {
+    const brandText = text(brand.inner.replace(/<span\b[^>]*\bbrand-mark\b[^>]*>.*?<\/span>/, ""));
+    const brandName = attr(brand.open, "aria-label") ?? "";
+    return { brandText, brandName, ok: brandText !== "" && squash(brandName).includes(squash(brandText)) };
+  });
+  check(brands.length >= 2 && results.every((r) => r.ok), `${label}: every brand link (header and footer, ${brands.length}) has an accessible name containing its visible text (WCAG 2.5.3)`, JSON.stringify(results));
+}
+{
+  const form = elements(html, "form", /^<form/)[0];
+  const names = form ? [...form.inner.matchAll(/<(?:input|select|textarea)\b[^>]*>/g)].map((m) => attr(m[0], "name")) : [];
+  check(names.includes("email") && !names.includes("E-mail"), "form has an input named \"email\" (FormSubmit Reply-To) and none named \"E-mail\"", JSON.stringify(names));
+}
+
 /* ---- focusable sections (mobile nav targets) ---- */
 for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) {
   const sec = elements(html, "section", new RegExp(`\\sid="${id}"`))[0];
@@ -542,7 +568,7 @@ for (const id of ["top", "rolam", "szolgaltatasok", "modszertan", "kapcsolat"]) 
         .filter(Boolean),
     );
     const expected = [
-      "_subject", "_template", "_captcha", "_honey", "Megkeresés témája", "Név", "E-mail",
+      "_subject", "_template", "_captcha", "_honey", "Megkeresés témája", "Név", "email",
       "Telefonszám", "Preferált elérhetőség", "Üzenet", "Adatkezelési hozzájárulás",
     ];
     const got = [...names].sort();

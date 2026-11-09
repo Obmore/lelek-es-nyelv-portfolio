@@ -87,6 +87,9 @@ button { color: inherit; font: inherit; }
 .services :focus-visible, footer :focus-visible, .voices :focus-visible, .contact-intro :focus-visible { outline-color: var(--paper); }
 /* The service and voice cards are light surfaces inside dark sections: ink keeps the ring above 3:1. */
 .service-card :focus-visible, .voice-card :focus-visible { outline-color: var(--ink); }
+.skip-link { position: fixed; z-index: 200; top: 12px; left: 12px; padding: 12px 18px; color: var(--paper); background: var(--ink); border-radius: 999px; font-size: 15px; font-weight: 650; transform: translateY(-200%); }
+.skip-link:focus, .skip-link:focus-visible { transform: none; outline: 3px solid var(--coral-deep); outline-offset: 2px; }
+main:focus { outline: none; }
 .progress-bar { position: fixed; inset: 0 0 auto 0; z-index: 100; height: 3px; background: var(--coral-deep); pointer-events: none; transform: scaleX(0); transform-origin: left; will-change: transform; }
 
 .site-header {
@@ -407,7 +410,8 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 /* The topic group label sits above the pills, further from the hidden radio. */
 .topic-options input { scroll-margin-top: 96px; }
 .field input::placeholder, .field textarea::placeholder { color: #66756b; opacity: 1; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--coral-deep); box-shadow: 0 1px 0 var(--coral-deep); }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--coral-deep); box-shadow: 0 2px 0 var(--coral-deep); }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 2px; }
 .message-field { grid-column: 1 / -1; }
 .consent-field { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; margin: 26px 0; padding: 10px 0; min-height: 44px; cursor: pointer; }
 .consent-field input { width: 24px; height: 24px; margin: 1px 0 0; accent-color: var(--ink); }
