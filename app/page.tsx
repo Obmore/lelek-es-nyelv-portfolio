@@ -182,7 +182,7 @@ export default function Home() {
     };
   }, []);
 
-  // Mobile menu: Escape closes and returns focus to the toggle; an outside click closes.
+  // Mobile menu: Escape closes and returns focus to the toggle; an outside click or focus leaving the header closes.
   useEffect(() => {
     if (!menuOpen) return;
     document.querySelector<HTMLElement>('#main-nav a')?.focus();
@@ -195,11 +195,17 @@ export default function Home() {
     const onPointer = (event: PointerEvent) => {
       if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMenuOpen(false);
     };
+    // Keyboard focus leaving the header (Tab past the last link) closes the menu; focus is left where it went.
+    const onFocusIn = (event: FocusEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMenuOpen(false);
+    };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [menuOpen]);
 
@@ -376,7 +382,7 @@ export default function Home() {
           <div className="services-main">
             <div className="services-heading">
               <p className="section-kicker" data-reveal>Két út, egy közös alap</p>
-              <h2 id="szolgaltatasok-title" data-reveal>Találd meg azt,<br /><em>amire most szükséged van.</em></h2>
+              <h2 id="szolgaltatasok-title" data-reveal>Találd meg azt,<br /><em>amire most szükséged&nbsp;van.</em></h2>
             </div>
 
             <div className="service-stage">
@@ -422,7 +428,7 @@ export default function Home() {
           <div className="method-main">
             <div className="method-intro">
               <p className="section-kicker" data-reveal>A folyamat</p>
-              <h2 id="modszertan-title" data-reveal>Nem kell előre<br /><em>tudnod az utat.</em></h2>
+              <h2 id="modszertan-title" data-reveal>Nem kell előre<br /><em>tudnod az&nbsp;utat.</em></h2>
               <p data-reveal>Elég, ha megérkezel. A többit lépésről lépésre közösen alakítjuk.</p>
             </div>
             <div className="steps">

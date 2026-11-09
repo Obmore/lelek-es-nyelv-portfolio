@@ -136,7 +136,7 @@ button { color: inherit; font: inherit; }
 }
 .eyebrow, .section-kicker { margin: 0 0 28px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .eyebrow span { width: 26px; height: 1px; display: inline-block; margin: 0 10px 4px 0; background: var(--coral-deep); }
-h1, h2 { margin: 0; font-family: var(--font-serif); font-weight: 420; letter-spacing: -.035em; }
+h1, h2 { margin: 0; font-family: var(--font-serif); font-weight: 420; letter-spacing: -.035em; text-wrap: balance; }
 h1 { font-size: clamp(54px, 6.8vw, 106px); line-height: .92; }
 h2 { font-size: clamp(44px, 5.6vw, 88px); line-height: 1; }
 h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
@@ -311,16 +311,24 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .step-number { align-self: start; padding-top: 53px; font: italic 400 20px var(--font-serif); color: var(--accent-text); }
 .steps h3 { margin: 0 0 13px; font: 400 34px var(--font-serif); }
 .steps p { max-width: 480px; margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink-soft); }
-.step-word { position: absolute; right: 0; top: 38px; font: italic 400 60px var(--font-serif); color: var(--sage-dark); opacity: .8; transform: translateX(20px); transition: transform .5s ease, opacity .5s ease; }
-.steps article:hover .step-word { transform: translateX(0); opacity: 1; }
+.steps article > div { position: relative; z-index: 1; }
+/* Decorative watermark: always fully inside the article, behind the text, below the h3. */
+.step-word { position: absolute; z-index: 0; right: 16px; bottom: 8px; font: italic 400 60px/1.15 var(--font-serif); color: var(--sage-dark); opacity: .28; pointer-events: none; user-select: none; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .step-word { transition: transform .5s ease, opacity .5s ease; }
+  .steps article:hover .step-word { transform: translateX(-8px); opacity: .4; }
+}
 
 /* ---------- Testimonials ---------- */
 .voices { --accent-text: var(--coral-light); color: var(--paper); background: var(--sage-dark); padding: clamp(80px, 9vw, 140px) clamp(20px, 6vw, 100px); overflow-x: clip; }
 .voices-heading { max-width: 1200px; margin: 0 auto clamp(44px, 6vw, 80px); }
 .voices .section-kicker { color: var(--coral-light); }
-.voices-stage { list-style: none; margin: 0 auto; padding: 0; max-width: 1280px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(22px, 2.4vw, 36px); align-items: start; perspective: 1600px; }
-.voice:nth-child(2) { margin-top: 56px; }
-.voice:nth-child(3) { margin-top: 112px; }
+.voices-stage { --voice-gap: clamp(22px, 2.4vw, 36px); list-style: none; margin: 0 auto; padding: 0; max-width: 1100px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--voice-gap); align-items: start; perspective: 1600px; }
+.voice:nth-child(2n) { margin-top: 56px; }
+/* An odd card count leaves the last card alone: centre it at one column's width. */
+@media (min-width: 1001px) {
+  .voice:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc((100% - var(--voice-gap)) / 2); }
+}
 .voice-card {
   position: relative; margin: 0; display: flex; flex-direction: column; gap: 18px; padding: clamp(24px, 2.4vw, 34px);
   color: var(--ink); background: var(--paper); border-radius: 4px;
@@ -340,11 +348,14 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
   .tilt { transform: translateY(var(--lift, 0px)) perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transform-style: preserve-3d; transition: transform .35s cubic-bezier(.2,.7,.2,1); }
   .service-slot:hover > .tilt, .voice:hover > .voice-card { --lift: -6px; }
   .service-content, .service-head, .service-details { transform-style: preserve-3d; }
-  .voice-chip, .service-topline { transform: translateZ(24px); }
-  .voice-pull, .service-card h3 { transform: translateZ(34px); }
-  .voice-author, .service-price { transform: translateZ(18px); }
-  .round-link { transform: translateZ(44px); }
-  .round-link:hover { transform: translateZ(44px) rotate(45deg); }
+  .voice-chip, .service-topline, .voice-pull, .service-card h3, .voice-author, .service-price { transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+  .round-link { transition: transform .35s cubic-bezier(.2,.7,.2,1), color .3s ease, background .3s ease; }
+  /* Depth offsets apply only while the card is hovered, so children stay aligned with their siblings at rest. */
+  .voice:hover > .voice-card .voice-chip, .service-slot:hover > .tilt .service-topline { transform: translateZ(24px); }
+  .voice:hover > .voice-card .voice-pull, .service-slot:hover > .tilt h3 { transform: translateZ(34px); }
+  .voice:hover > .voice-card .voice-author, .service-slot:hover > .tilt .service-price { transform: translateZ(18px); }
+  .service-slot:hover > .tilt .round-link { transform: translateZ(44px); }
+  .service-slot:hover > .tilt .round-link:hover { transform: translateZ(44px) rotate(45deg); }
 }
 
 .faq { padding-bottom: 140px; }
@@ -389,6 +400,7 @@ h1 em, h2 em { color: var(--accent-text); font-weight: 380; }
 .field > span i { margin-left: 5px; font-style: normal; font-weight: 500; color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
 .field input, .field select, .field textarea { width: 100%; min-width: 0; min-height: 48px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--ink-soft); border-radius: 0; outline: 0; color: var(--ink); background: transparent; font: 400 16px/1.5 var(--font-sans); transition: border-color .25s ease; }
 .field textarea { resize: vertical; line-height: 1.65; }
+.field input, .field select, .field textarea, .topic-options input { scroll-margin-top: calc(var(--header-h) + 32px); }
 .field input::placeholder, .field textarea::placeholder { color: #66756b; opacity: 1; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--coral-deep); box-shadow: 0 1px 0 var(--coral-deep); }
 .message-field { grid-column: 1 / -1; }
@@ -542,7 +554,7 @@ footer { min-height: 210px; padding: 48px clamp(25px, 6vw, 92px) 34px; display: 
   .service-details > p:first-child { font-size: 18px; }
   .method { padding-bottom: 85px; }
   .steps article { min-height: 220px; grid-template-columns: 34px 1fr; gap: 15px; }
-  .step-word { font-size: 45px; top: 18px; }
+  .step-word { font-size: 45px; right: 12px; bottom: 6px; }
   .voices { padding: 72px 16px; }
   .voices-heading { padding: 0 8px; }
   .voice-card { padding: 24px 20px; }
