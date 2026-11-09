@@ -120,10 +120,10 @@ const EMAIL = (process.env.EXPECTED_CONTACT_EMAIL ?? "").trim() || "juhasznagyan
 const PHONE_TEXT = "+36\u00a020\u00a0319\u00a05621";
 const PHONE_HREF = "tel:+36203195621";
 
-/** Exactly one tel: link in `fragment`: href, text, and no target or rel attribute. */
+/** Exactly one tel: link in `fragment`: href, text, and no target or rel attribute. The text is read with decode(), because text() collapses U+00A0. */
 function checkPhoneLink(where, fragment) {
   const tel = anchorsIn(fragment).filter((a) => (a.href ?? "").toLowerCase().startsWith("tel:"));
-  check(tel.length === 1 && tel[0].href === PHONE_HREF && tel[0].label === PHONE_TEXT && attr(tel[0].open, "target") === null && attr(tel[0].open, "rel") === null, `${where} has exactly one tel: link, href ${PHONE_HREF}, text "+36 20 319 5621" with U+00A0, no target`, JSON.stringify(tel.map((a) => [a.href, a.label, a.open])));
+  check(tel.length === 1 && tel[0].href === PHONE_HREF && decode(tel[0].inner) === PHONE_TEXT && attr(tel[0].open, "target") === null && attr(tel[0].open, "rel") === null, `${where} has exactly one tel: link, href ${PHONE_HREF}, text "+36 20 319 5621" with U+00A0, no target`, JSON.stringify(tel.map((a) => [a.href, a.label, a.open])));
 }
 
 /* ---- v2 spec strings (expectations come from the spec, not from content.ts) ---- */
