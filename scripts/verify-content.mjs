@@ -153,7 +153,7 @@ const forbidden = [
   ["pszichológiai konzultáció", /pszichológiai konzultáció/i],
   ["ifjúságpszichológiai", /ifjúságpszichológiai/i],
   ["próbaóra", /próbaóra/i],
-  ["old contact e-mail", /benzdsiott1998@gmail\.com/i],
+  ["old contact e-mail", new RegExp(OLD_EMAIL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")],
   ["removed about sentence: Anna vagyok", /Anna vagyok, mentálhigiénés segítő szakember és angoltanár/],
   ["removed about sentence: Abban hiszek", /Abban hiszek, hogy a valódi tanulás és változás ugyanonnan indul/],
   ["removed about sentence: Nem kész receptekkel", /Nem kész receptekkel érkezem/],

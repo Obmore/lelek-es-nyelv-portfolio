@@ -61,4 +61,4 @@ The site is served from `https://lelekesnyelv.hu/`. Follow this order for this d
 
 Node is pinned in `.nvmrc` (22); CI reads it too. Dependency versions are exact. Lint uses ESLint 9 with `@eslint/js`, `typescript-eslint` and `eslint-plugin-react-hooks`; Next.js is no longer a dependency.
 
-`npm audit` still reports dev-only findings (the build tool `esbuild` and a nested `minimatch` inside `typescript-eslint`). None of it ships in the built site. Never run `npm audit fix --force` here: its suggested fixes downgrade `typescript-eslint` and bump `esbuild` to a breaking version. Apply non-breaking fixes only, and run `npm run check` afterwards.
+`npm audit` still reports one dev-only finding: a nested `minimatch` inside `typescript-eslint` (no upstream fix yet). It does not ship in the built site. Never run `npm audit fix --force` here: it would downgrade `typescript-eslint`. Apply non-breaking fixes only, and run `npm run check` afterwards.
