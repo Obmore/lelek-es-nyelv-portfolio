@@ -86,6 +86,7 @@ const source = srcFiles.map((f) => decode(readFileSync(f, "utf8"))).join("\n");
 const T1 = "Szeretném, szeretnénk megköszönni, amit értem tettél az elmúlt évben! Édesanyám a kommented megtalálva talált rád, hiszen én éppen angoltanárt kerestem C1-es nyelvvizsga-felkészítéshez. Szinte rögtön el is kezdtük a közös munkát, ami veled az egész tanulási folyamatot megkönnyítette. Végig emberközpontú, jó hangulatú és igényes órákat adtál nekem. Amellett, hogy ennyire figyelmes voltál velem, a lényeget nem hagyhatom ki: egy év alatt egy erős B2-es szintről elvezettél egy fantasztikus C1-es tudásszintig, amit egy kiváló felsőfokú nyelvvizsgával igazoltam. Hálásan köszönöm azt a mérhetetlen tudást és tapasztalatot, amit átadtál nekem (nemcsak az angol, hanem az élet területén is), illetve azt a rengeteg értékes beszélgetést, amikkel hozzájárultál a fejlődésemhez minden téren!";
 const T2 = "Szeretném megköszönni azt a fejlődési lehetőséget, amit a te segítségeddel tapasztaltam meg. C1-es nyelvvizsgára készültem, és anyukámon keresztül ismertelek meg. Nagyon sokat fejlődtem az óráidon, annak ellenére, hogy ezeken online tudtam csak részt venni, mivel messze lakom. Mindig jó hangulatban teltek az órák, vidám hangulatban haladtunk át a témakörökön, nyelvtani anyagokon, rengeteg tesztet kitöltve. Nekem elsőre sikerült a vizsgám, amiért nagyon hálás vagyok. A többletpontokkal, amiket ez a nyelvvizsga hozott számomra, bekerültem az egyetemre, ahova jelentkeztem. Egy csodás kaland volt!";
 const T3 = "Pannihoz segítő alkalmakra kezdtem járni, az elmúlt két évben rendszeresen találkoztunk. Nagyon szeretek vele beszélgetni, hiszen mindig kifejezetten pontos meglátást kapok tőle, miközben figyelmesen végighallgat. A beszélgetés segít nekem abban, hogy megértsem a saját helyzetemet, és a környezetemben lévő emberek, családtagok viselkedésének mozgatórugóit, de elsősorban abban segít, hogy megértsem magam, s ezáltal sokkal közelebb kerültem önmagamhoz. Az alkalmakról mindig könnyebb szívvel távozom, s valami olyan konklúzióval, ami segít az aktuális nehézségemmel való megküzdésben. Nagyon tudom ajánlani őt, mert egy nagyon kedves, együttérző, közvetlen és nyitott embert ismertem meg a személyében. Mindenkivel gyorsan megtalálja a közös hangot, vele könnyen biztonságban érezhetjük magunkat. Legyen szó bármilyen helyzetről, ő tud valami olyat mondani, ami közelebb visz minket a megoldáshoz!";
+const T4 = "A kislányommal jártunk Annánál, mivel nehezen tudott esténként elaludni. Azonnal megtalálták a közös hangot, s Anna nyugodt, figyelmes lénye sokat segített Eszternek. Hamar megnyílt, s mindvégig beszédes volt. Otthon is gyakoroltuk a relaxációt, ami segítette abban, hogy nyugodtan készülődjön az esti alváshoz. Az éjszakák is egyre normálisabban teltek. Szívből ajánlom őt, mert figyelmével, megértő lényével átsegítette kislányomat a nehéz időszakon!";
 
 const A1 = "1969-ben születtem. A szüleim orvosok voltak, kiskorom óta láttam, ahogyan feltétel nélkül, felelősségteljesen segítenek bárkinek, aki támogatásukat kéri. A szakmai segítségen messze túlmutató támogatást nyújtottak mindenkinek, aki feléjük fordult. Számomra ez alapminta és érték lett jelenlegi életemben.";
 const A2 = "Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.";
@@ -102,12 +103,15 @@ const required = [
   ["testimonial T1 text", T1],
   ["testimonial T2 text", T2],
   ["testimonial T3 text", T3],
+  ["testimonial T4 text", T4],
   ["T1 author", "Helle Jázmin"],
   ["T2 author", "Pethő Marci"],
   ["T3 author", "Barbara E."],
+  ["T4 author", "Tünde L."],
   ["T1 label", "C1 nyelvvizsga-felkészítés · 1 év"],
   ["T2 label", "C1 nyelvvizsga-felkészítés · online órák"],
   ["T3 label", "Mentálhigiénés segítő beszélgetések · 2 év"],
+  ["T4 label", "Szülői visszajelzés · gyermek elalvási nehézségei"],
   ["price mental hygiene", `18${NB}000${NB}Ft / 60 perc`],
   ["price English", `7000${NB}Ft / 60 perc`],
   ["mental hygiene name", "Mentálhigiénés segítő beszélgetés"],

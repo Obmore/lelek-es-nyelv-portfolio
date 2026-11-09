@@ -51,6 +51,14 @@ export const testimonials: Testimonial[] = [
     pull: 'sokkal közelebb kerültem önmagamhoz',
     text: 'Pannihoz segítő alkalmakra kezdtem járni, az elmúlt két évben rendszeresen találkoztunk. Nagyon szeretek vele beszélgetni, hiszen mindig kifejezetten pontos meglátást kapok tőle, miközben figyelmesen végighallgat. A beszélgetés segít nekem abban, hogy megértsem a saját helyzetemet, és a környezetemben lévő emberek, családtagok viselkedésének mozgatórugóit, de elsősorban abban segít, hogy megértsem magam, s ezáltal sokkal közelebb kerültem önmagamhoz. Az alkalmakról mindig könnyebb szívvel távozom, s valami olyan konklúzióval, ami segít az aktuális nehézségemmel való megküzdésben. Nagyon tudom ajánlani őt, mert egy nagyon kedves, együttérző, közvetlen és nyitott embert ismertem meg a személyében. Mindenkivel gyorsan megtalálja a közös hangot, vele könnyen biztonságban érezhetjük magunkat. Legyen szó bármilyen helyzetről, ő tud valami olyat mondani, ami közelebb visz minket a megoldáshoz!',
   },
+  {
+    id: 'tunde-l',
+    author: 'Tünde L.',
+    category: 'Mentálhigiéné',
+    label: 'Szülői visszajelzés · gyermek elalvási nehézségei',
+    pull: 'figyelmével, megértő lényével átsegítette kislányomat a nehéz időszakon',
+    text: 'A kislányommal jártunk Annánál, mivel nehezen tudott esténként elaludni. Azonnal megtalálták a közös hangot, s Anna nyugodt, figyelmes lénye sokat segített Eszternek. Hamar megnyílt, s mindvégig beszédes volt. Otthon is gyakoroltuk a relaxációt, ami segítette abban, hogy nyugodtan készülődjön az esti alváshoz. Az éjszakák is egyre normálisabban teltek. Szívből ajánlom őt, mert figyelmével, megértő lényével átsegítette kislányomat a nehéz időszakon!',
+  },
 ];
 
 export type Service = {
