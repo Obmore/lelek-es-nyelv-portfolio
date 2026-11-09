@@ -30,6 +30,10 @@ npm run preview    # serve the production build
 
 A push or merge to `main` runs `.github/workflows/pages.yml`: the checks first, then a GitHub Pages deployment. Pull requests run the "Checks" workflow only.
 
+## Generated files and icons
+
+`vite.config.ts` emits `robots.txt`, `sitemap.xml` and the branded `404.html` at build time from `SITE_URL` (a domain change stays one line), and injects the two critical-path font preloads with their hashed names. `public/apple-touch-icon.png` (180x180) and `public/favicon.ico` (16 and 32 px) are rasterised from `public/favicon.svg`. The JSON-LD in `github-pages/index.html` repeats the service names and prices from `app/content.ts`; `verify-content.mjs` fails if they drift.
+
 ## Share image
 
 The Open Graph image is `public/og-image.png` (1200x630). Regenerate it after changing the name or tagline:
