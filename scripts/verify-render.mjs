@@ -491,9 +491,9 @@ for (const [label, markup] of [["home page", html], ["privacy page", privacyHtml
   const brands = elements(markup, "a", /class="[^"]*\bbrand\b/);
   const expectedPurpose = label === "home page" ? [", főoldal", ", vissza az oldal tetejére"] : [", vissza a főoldalra", ", vissza a főoldalra"];
   const results = brands.map((brand, i) => {
-    const markOk = /<span[^>]*brand-mark[^>]*aria-hidden="true"[^>]*>/.test(brand.inner);
-    const withoutMark = brand.inner.replace(/<span[^>]*brand-mark[^>]*>.*?<\/span>/, "");
-    const srMatch = withoutMark.match(/<span[^>]*sr-only[^>]*>(.*?)<\/span>/);
+    const markOk = /<span\b[^>]*\bbrand-mark\b[^>]*aria-hidden="true"[^>]*>/.test(brand.inner);
+    const withoutMark = brand.inner.replace(/<span\b[^>]*\bbrand-mark\b[^>]*>.*?<\/span>/, "");
+    const srMatch = withoutMark.match(/<span\b[^>]*\bsr-only\b[^>]*>(.*?)<\/span>/);
     const purpose = srMatch ? decode(srMatch[1]) : "";
     const name = decode(withoutMark.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
     const visible = decode(withoutMark.replace(srMatch ? srMatch[0] : "", "").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
