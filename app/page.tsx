@@ -5,7 +5,12 @@ import { FormStatus, FormStatusText } from './components/FormStatus';
 import SiteFooter from './components/SiteFooter';
 import HeroSceneMount from './components/hero-scene/HeroSceneMount';
 import { subscribeMedia } from './lib/media';
+import portrait480Webp from './assets/anna-portrait-480.webp';
+import portrait800Webp from './assets/anna-portrait-800.webp';
+import portrait480Jpg from './assets/anna-portrait-480.jpg';
+import portrait800Jpg from './assets/anna-portrait-800.jpg';
 import {
+  ABOUT_PORTRAIT_ALT,
   ABOUT_STAMP,
   CONSENT_AFTER,
   CONSENT_BEFORE,
@@ -24,6 +29,7 @@ import {
 } from './content';
 
 const MAX_TILT = 6; // degrees
+const PORTRAIT_SIZES = '(max-width: 1000px) min(400px, 86vw), 400px';
 const FORM_TIMEOUT_MS = 25000;
 const DEFAULT_REPLY = 'E-mailben';
 const PHONE_REPLY = 'Telefonon';
@@ -351,8 +357,20 @@ export default function Home() {
             <div className="about-grid">
               <div className="about-portrait" data-reveal>
                 <div className="portrait-shape">
-                  <span className="portrait-initial">A</span>
-                  <span className="portrait-caption">presence<br />before<br />performance</span>
+                  <picture>
+                    <source type="image/webp" srcSet={`${portrait480Webp} 480w, ${portrait800Webp} 800w`} sizes={PORTRAIT_SIZES} />
+                    <img
+                      src={portrait800Jpg}
+                      srcSet={`${portrait480Jpg} 480w, ${portrait800Jpg} 800w`}
+                      sizes={PORTRAIT_SIZES}
+                      width={800}
+                      height={976}
+                      alt={ABOUT_PORTRAIT_ALT}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
+                  <span className="portrait-caption" lang="en">presence<br />before<br />performance</span>
                 </div>
                 <span className="stamp">{ABOUT_STAMP}</span>
               </div>

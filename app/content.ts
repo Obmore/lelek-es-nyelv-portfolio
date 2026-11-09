@@ -142,6 +142,7 @@ export const aboutParagraphs = [
   'Később az ELTE angol nyelv és irodalom szakán szereztem meg első diplomámat, s tanárként szintén ezen elvek szerint dolgozom. A tanulási folyamat középpontjában a tanítványaim állnak. Szeretettel, odafigyeléssel segítem a tanulási folyamataikat.',
   'Mivel a munkámban különleges szerep jut a humán pszichológiai és pedagógiai jelenlétnek, elvégeztem a Semmelweis Egyetem Mentálhigiéné Intézetének posztgraduális képzését is, s hogy mindazt a tudást, tapasztalatot, amit ebből merítek, az emberek, a hozzám fordulók szolgálatának szentelhessem. A segítő folyamatban fontos szerepet kap az, hogy egyenrangú társként tekintek a hozzám fordulókra, türelemmel kísérem őket, s velük drukkolok, hogy megtalálják kérdéseikre a legjobb választ.',
 ];
+export const ABOUT_PORTRAIT_ALT = 'Juhász Nagy Anna portréja';
 export const ABOUT_STAMP = 'ELTE · SOTE';
 
 /** Consent checkbox text; CONSENT_LINK is rendered as a link to the privacy notice. */
