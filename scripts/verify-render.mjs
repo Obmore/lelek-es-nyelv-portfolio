@@ -488,11 +488,14 @@ for (const [label, markup] of [["home page", html], ["privacy page", privacyHtml
   const target = targetId ? [...markup.matchAll(/<main\b[^>]*>/g)].map((m) => m[0]).find((o) => attr(o, "id") === targetId) : null;
   check(Boolean(target) && attr(target, "tabindex") === "-1", `${label}: the skip link target is <main id> with tabindex="-1"`, String(target));
   check(Boolean(first) && markup.indexOf(first) < markup.indexOf("<header"), `${label}: the skip link comes before the header`);
-  const brand = elements(markup, "a", /class="[^"]*\bbrand\b/)[0];
+  const brands = elements(markup, "a", /class="[^"]*\bbrand\b/);
   const squash = (v) => v.toLowerCase().replace(/&amp;/g, "&").replace(/[^\p{L}&]+/gu, "");
-  const brandText = brand ? text(brand.inner.replace(/<span\b[^>]*\bbrand-mark\b[^>]*>.*?<\/span>/, "")) : "";
-  const brandName = brand ? attr(brand.open, "aria-label") ?? "" : "";
-  check(brandText !== "" && squash(brandName).includes(squash(brandText)), `${label}: the brand link accessible name contains its visible text (WCAG 2.5.3)`, JSON.stringify({ brandText, brandName }));
+  const results = brands.map((brand) => {
+    const brandText = text(brand.inner.replace(/<span\b[^>]*\bbrand-mark\b[^>]*>.*?<\/span>/, ""));
+    const brandName = attr(brand.open, "aria-label") ?? "";
+    return { brandText, brandName, ok: brandText !== "" && squash(brandName).includes(squash(brandText)) };
+  });
+  check(brands.length >= 2 && results.every((r) => r.ok), `${label}: every brand link (header and footer, ${brands.length}) has an accessible name containing its visible text (WCAG 2.5.3)`, JSON.stringify(results));
 }
 {
   const form = elements(html, "form", /^<form/)[0];
